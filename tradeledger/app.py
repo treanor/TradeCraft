@@ -39,7 +39,7 @@ if page == 'Trade Log':
                 tags=tags,
             )
             st.success('Trade added')
-            st.experimental_rerun()
+            utils.rerun()
 
     trades_df = db.fetch_trades()
 
@@ -73,10 +73,10 @@ if page == 'Trade Log':
                 )
                 st.success('Trade updated')
                 st.session_state['edit_id'] = None
-                st.experimental_rerun()
+                utils.rerun()
             if st.button('Cancel Edit'):
                 st.session_state['edit_id'] = None
-                st.experimental_rerun()
+                utils.rerun()
 
     # Handle delete confirmation
     if st.session_state.get('delete_id') is not None:
@@ -89,10 +89,10 @@ if page == 'Trade Log':
                 db.delete_trade(int(trade['id']))
                 st.session_state['delete_id'] = None
                 st.success('Trade deleted')
-                st.experimental_rerun()
+                utils.rerun()
             if col2.button('Cancel'):
                 st.session_state['delete_id'] = None
-                st.experimental_rerun()
+                utils.rerun()
 
     st.header('Trades')
     if not trades_df.empty:
@@ -106,10 +106,10 @@ if page == 'Trade Log':
             )
             if c2.button('Edit', key=f"edit_{row['id']}"):
                 st.session_state['edit_id'] = row['id']
-                st.experimental_rerun()
+                utils.rerun()
             if c3.button('Delete', key=f"delete_{row['id']}"):
                 st.session_state['delete_id'] = row['id']
-                st.experimental_rerun()
+                utils.rerun()
         st.download_button('Export CSV', trades_df.to_csv(index=False),
                            'trades.csv')
     else:

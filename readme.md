@@ -42,18 +42,18 @@ A private, customizable trade journal and analytics dashboard for Interactive Br
 
 2. **Install requirements:**
     ```bash
-    pip install -r requirements.txt
+    pip install -r tradeledger/requirements.txt
     ```
 
-3. **(Optional) Set up IBKR API access:**  
+3. **(Optional) Set up IBKR API access:**
     Follow the [ib_insync guide](https://github.com/erdewit/ib_insync) or use CSV exports from IBKR.
 
 4. **Run the app:**
     ```bash
-    streamlit run app.py
+    streamlit run tradeledger/app.py
     ```
 
-5. **Start journaling!**  
+5. **Start journaling!**
     Import or manually enter your trades and explore your dashboard.
 
 ---
@@ -86,4 +86,3 @@ MIT License. See [LICENSE](LICENSE) for details.
 Open an issue or start a discussion!
 
 ---
-

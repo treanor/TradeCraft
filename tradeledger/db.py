@@ -7,9 +7,9 @@ DB_NAME = "trades.db"
 
 def init_db(db_name: str = DB_NAME) -> None:
     """Initialize the SQLite database and create the trades table if it doesn't exist."""
-    conn = sqlite3.connect(db_name)
-    cursor = conn.cursor()
-    cursor.execute(
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS trades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

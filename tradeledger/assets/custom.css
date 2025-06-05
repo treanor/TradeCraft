@@ -1,0 +1,32 @@
+body { background: #181c24 !important; color: #e0e6f0 !important; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 260px; background: #202436; color: #e0e6f0; z-index: 100; padding: 0 0 0 0; }
+.sidebar .account { margin: 2em 1em 1.5em 1em; background: #23283a; border-radius: 12px; padding: 1em; }
+.sidebar .account-label { font-size: 1em; color: #bfc9db; background: #23283a; border-radius: 8px; padding: 2px 10px; display: inline-block; margin-bottom: 0.2em; }
+.sidebar .balance { font-size: 2em; color: #4fc3f7; font-weight: bold; display: flex; align-items: center; gap: 0.3em; }
+.sidebar .account-details { font-size: 0.95em; margin-top: -0.5em; margin-bottom: 0.5em; }
+.sidebar .account-details .cash { color: #60a5fa; }
+.sidebar .account-details .active { color: #4ade80; }
+.sidebar .nav { margin: 2em 0 1em 0; }
+.sidebar .nav-item { display: flex; align-items: center; gap: 0.7em; font-size: 1.1em; padding: 0.5em 1.2em; border-radius: 8px; margin-bottom: 0.2em; cursor: pointer; transition: background 0.15s; }
+.sidebar .nav-item.active, .sidebar .nav-item:hover { background: #23283a; color: #4fc3f7; font-weight: 700; }
+.sidebar .nav-icon { font-size: 1.2em; width: 1.5em; text-align: center; opacity: 0.85; }
+.sidebar .action-btn { display: flex; align-items: center; gap: 0.7em; font-size: 1.1em; font-weight: 500; border: none; border-radius: 16px; padding: 0.6em 1.5em; margin: 0.5em 1em 0.5em 1em; width: calc(100% - 2em); cursor: pointer; transition: background 0.15s; justify-content: flex-start; }
+.sidebar .btn-trade { background: #29405a; color: #e0e6f0; }
+.sidebar .btn-trade:hover { background: #36506e; }
+.sidebar .btn-setup { background: #4b2e39; color: #e0e6f0; }
+.sidebar .btn-setup:hover { background: #6b3c4e; }
+.sidebar .btn-note { background: #7c6842; color: #e0e6f0; }
+.sidebar .btn-note:hover { background: #a68c5c; }
+.header { position: fixed; left: 260px; right: 0; top: 0; height: 64px; background: #181c24; color: #fff; display: flex; align-items: center; gap: 1.1em; z-index: 101; border-bottom: 1px solid #23283a; font-size: 2em; font-weight: 800; padding: 0 2.5em; }
+.header .logo { font-size: 1.5em; color: #4fc3f7; font-weight: 900; margin-right: 0.5em; }
+.header .title { font-size: 1.1em; font-weight: 800; color: #fff; margin-right: 1.5em; }
+.main-content { margin-left: 260px; margin-top: 64px; padding: 2em; min-height: 100vh; background: #181c24; }
+.stat-card { display: inline-block; background: #23283a; border-radius: 12px; padding: 1.2em 2em; margin: 0.5em 1em 0.5em 0; min-width: 120px; text-align: center; box-shadow: 0 2px 8px #0002; }
+.stat-title { font-size: 0.9em; color: #a0aec0; }
+.stat-value { font-size: 1.5em; font-weight: bold; color: #e0e6f0; }
+.stat-pos { color: #4ade80; }
+.stat-neg { color: #f87171; }
+.stat-neutral { color: #facc15; }
+.badge-win { background: #14532d; color: #4ade80; border-radius: 8px; padding: 2px 10px; font-size: 0.9em; }
+.badge-loss { background: #7f1d1d; color: #f87171; border-radius: 8px; padding: 2px 10px; font-size: 0.9em; }
+.badge-wash { background: #78350f; color: #facc15; border-radius: 8px; padding: 2px 10px; font-size: 0.9em; }

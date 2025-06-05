@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-from . import db
-from . import utils
+import db
+import utils
 
 # Initialize database
 if 'db_initialized' not in st.session_state:

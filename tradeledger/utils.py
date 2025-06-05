@@ -17,3 +17,12 @@ def aggregate_pnl(df: pd.DataFrame, freq: str = 'D') -> pd.DataFrame:
         .reset_index()
     )
     return agg
+
+
+def equity_curve(df: pd.DataFrame) -> pd.DataFrame:
+    """Return cumulative P&L as an equity curve."""
+    if df.empty:
+        return pd.DataFrame(columns=['date', 'equity'])
+    curve = df.sort_values('date').copy()
+    curve['equity'] = curve['pnl'].cumsum()
+    return curve[['date', 'equity']]

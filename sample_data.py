@@ -7,7 +7,7 @@ symbols = ["AAPL", "MSFT", "TSLA", "SPY", "QQQ", "GOOG", "AMZN", "NVDA", "META",
 option_suffixes = ["C", "P"]
 statuses = ["WIN", "LOSS", "OPEN"]
 
-weeks = 21
+weeks = 52
 start_date = datetime.now() - timedelta(weeks=weeks)
 trades_per_day = 5
 

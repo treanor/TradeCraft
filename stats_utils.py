@@ -16,26 +16,30 @@ def get_total_pnl(trades):
             pnl += (exit.price - entry.price) * entry.quantity
     return pnl
 
-def filter_trades(trades, filter_key):
+def filter_trades(trades, filter_key, tag_filter=None):
     import pandas as pd
     now = datetime.now()
+    filtered = trades
     if filter_key == "all":
-        return trades
-    if filter_key == "today":
-        return [t for t in trades if t.legs and t.legs[-1].datetime.date() == now.date()]
+        filtered = trades
+    elif filter_key == "today":
+        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.date() == now.date()]
     elif filter_key == "yesterday":
         yest = now.date() - pd.Timedelta(days=1)
-        return [t for t in trades if t.legs and t.legs[-1].datetime.date() == yest]
+        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.date() == yest]
     elif filter_key == "this_week":
         start = now - pd.Timedelta(days=now.weekday())
-        return [t for t in trades if t.legs and t.legs[-1].datetime.date() >= start.date()]
+        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.date() >= start.date()]
     elif filter_key == "last_week":
         start = now - pd.Timedelta(days=now.weekday() + 7)
         end = start + pd.Timedelta(days=6)
-        return [t for t in trades if t.legs and start.date() <= t.legs[-1].datetime.date() <= end.date()]
+        filtered = [t for t in trades if t.legs and start.date() <= t.legs[-1].datetime.date() <= end.date()]
     elif filter_key == "this_month":
-        return [t for t in trades if t.legs and t.legs[-1].datetime.month == now.month and t.legs[-1].datetime.year == now.year]
-    return trades
+        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.month == now.month and t.legs[-1].datetime.year == now.year]
+    # Tag filter (intersection: trade must have at least one selected tag)
+    if tag_filter:
+        filtered = [t for t in filtered if any(tag in t.tags for tag in tag_filter)]
+    return filtered
 
 def get_equity_curve(trades, filter_key="all"):
     from collections import defaultdict
@@ -231,43 +235,67 @@ def get_performance_by_hour(trades):
     return {h: hour_pnl.get(h, 0) for h in hours}
 
 def get_stats_by_tag(trades):
-    # Returns list of dicts for DataTable
+    # Returns list of dicts for DataTable, supports multiple tags per trade
     from collections import defaultdict
-    tag_stats = defaultdict(lambda: {"Trades": 0, "PnL": 0.0})
+    tag_stats = defaultdict(lambda: {"Trades": 0, "PnL": 0.0, "PnL_pct_sum": 0.0, "Weighted_pct_num": 0.0, "Weighted_pct_den": 0.0})
     for t in trades:
-        tag = getattr(t, "tag", "--NO TAGS--")
+        tags = getattr(t, "tags", None)
+        if not tags or not isinstance(tags, list) or len(tags) == 0:
+            tags = ["--NO TAGS--"]
         if t.status in ("WIN", "LOSS") and len(t.legs) > 1:
-            pnl = (t.legs[1].price - t.legs[0].price) * t.legs[0].quantity
-            tag_stats[tag]["Trades"] += 1
-            tag_stats[tag]["PnL"] += pnl
+            entry = t.legs[0]
+            exit = t.legs[1]
+            pnl = (exit.price - entry.price) * entry.quantity
+            notional = abs(entry.price * entry.quantity)
+            pnl_pct = ((exit.price - entry.price) / entry.price) * 100 if entry.price else 0
+            for tag in tags:
+                tag_stats[tag]["Trades"] += 1
+                tag_stats[tag]["PnL"] += pnl
+                tag_stats[tag]["PnL_pct_sum"] += pnl_pct
+                tag_stats[tag]["Weighted_pct_num"] += pnl_pct * notional
+                tag_stats[tag]["Weighted_pct_den"] += notional
     rows = []
     for tag, stats in tag_stats.items():
+        trades = stats["Trades"]
+        pnl = stats["PnL"]
+        pnl_pct = stats["PnL_pct_sum"] / trades if trades else 0
+        weighted_pct = stats["Weighted_pct_num"] / stats["Weighted_pct_den"] if stats["Weighted_pct_den"] else 0
         rows.append({
             "Tag": tag,
-            "Trades": stats["Trades"],
-            "PnL": f"${stats['PnL']:,.2f}",
-            "PnL %": "-",  # Placeholder
-            "Weighted %": "-",  # Placeholder
+            "Trades": trades,
+            "PnL": f"${pnl:,.2f}",
+            "PnL %": f"{pnl_pct:.2f}%",
+            "Weighted %": f"{weighted_pct:.2f}%"
         })
     return rows
 
 def get_stats_by_symbol(trades):
-    # Returns list of dicts for DataTable
     from collections import defaultdict
-    symbol_stats = defaultdict(lambda: {"Trades": 0, "PnL": 0.0})
+    symbol_stats = defaultdict(lambda: {"Trades": 0, "PnL": 0.0, "PnL_pct_sum": 0.0, "Weighted_pct_num": 0.0, "Weighted_pct_den": 0.0})
     for t in trades:
-        symbol = t.symbol
+        symbol = getattr(t, "symbol", "-")
         if t.status in ("WIN", "LOSS") and len(t.legs) > 1:
-            pnl = (t.legs[1].price - t.legs[0].price) * t.legs[0].quantity
+            entry = t.legs[0]
+            exit = t.legs[1]
+            pnl = (exit.price - entry.price) * entry.quantity
+            notional = abs(entry.price * entry.quantity)
+            pnl_pct = ((exit.price - entry.price) / entry.price) * 100 if entry.price else 0
             symbol_stats[symbol]["Trades"] += 1
             symbol_stats[symbol]["PnL"] += pnl
+            symbol_stats[symbol]["PnL_pct_sum"] += pnl_pct
+            symbol_stats[symbol]["Weighted_pct_num"] += pnl_pct * notional
+            symbol_stats[symbol]["Weighted_pct_den"] += notional
     rows = []
     for symbol, stats in symbol_stats.items():
+        trades = stats["Trades"]
+        pnl = stats["PnL"]
+        pnl_pct = stats["PnL_pct_sum"] / trades if trades else 0
+        weighted_pct = stats["Weighted_pct_num"] / stats["Weighted_pct_den"] if stats["Weighted_pct_den"] else 0
         rows.append({
             "Symbol": symbol,
-            "Trades": stats["Trades"],
-            "PnL": f"${stats['PnL']:,.2f}",
-            "PnL %": "-",  # Placeholder
-            "Weighted %": "-",  # Placeholder
+            "Trades": trades,
+            "PnL": f"${pnl:,.2f}",
+            "PnL %": f"{pnl_pct:.2f}%",
+            "Weighted %": f"{weighted_pct:.2f}%"
         })
     return rows

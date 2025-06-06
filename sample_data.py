@@ -49,6 +49,15 @@ def random_trade(trade_id, date):
         exit_price = entry_price - abs(round(random.uniform(1, 100), 2))
     else:  # OPEN
         exit_price = entry_price + round(random.uniform(-50, 100), 2)
+    # --- Add random tags ---
+    tag_pool = ["Fidelity", "TastyTrade", "qqq", "SPY", "--NO TAGS--"]
+    tags = []
+    if random.random() < 0.7:
+        tags.append(random.choice(tag_pool[:-1]))
+    if random.random() < 0.2:
+        tags.append(random.choice(tag_pool[:-1]))
+    if not tags:
+        tags = [tag_pool[-1]]
     legs = [
         TradeLeg(action=TradeAction.BUY, datetime=entry_date, quantity=qty, price=entry_price),
     ]
@@ -61,7 +70,8 @@ def random_trade(trade_id, date):
         asset_type=AssetType.OPTION,
         created_at=entry_date,
         status=status,
-        legs=legs
+        legs=legs,
+        tags=tags
     )
 
 # Sample trades for development/demo

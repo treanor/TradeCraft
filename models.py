@@ -57,6 +57,7 @@ class Trade:
     status: str = "OPEN"     # "WIN", "LOSS", or "OPEN"
     journal_entry: Optional[str] = None
     legs: List[TradeLeg] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)  # <-- Add this line
 
     def to_dashboard_row(self):
         # Example: summarize main fields for dashboard table

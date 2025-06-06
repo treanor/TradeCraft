@@ -20,6 +20,21 @@ def filter_buttons_row(active_filter):
         ) for label, value in FILTER_OPTIONS
     ], className="filter-btns-row", style={"marginBottom": "18px", "display": "flex", "gap": "12px"})
 
+def filter_bar(active_filter, all_tags, selected_tags=None):
+    if selected_tags is None:
+        selected_tags = []
+    return html.Div([
+        filter_buttons_row(active_filter),
+        dcc.Dropdown(
+            id="tag-filter-dropdown",
+            options=[{"label": tag, "value": tag} for tag in sorted(all_tags) if tag != "--NO TAGS--"] + [{"label": "--NO TAGS--", "value": "--NO TAGS--"}],
+            value=selected_tags,
+            multi=True,
+            placeholder="Filter by tag(s)...",
+            style={"width": "320px", "marginLeft": "18px"}
+        )
+    ], style={"display": "flex", "alignItems": "center", "gap": "12px", "marginBottom": "18px"})
+
 # --- Improved stats panel layout ---
 def stats_page_layout():
     # Section: General Stats
@@ -286,7 +301,7 @@ def calendar_page_layout():
         'boxSizing': 'border-box',
     })
 
-def stats_page_layout_dynamic(trades, active_filter):
+def stats_page_layout_dynamic(trades, active_filter, selected_tags):
     from stats_utils import (
         get_wins, get_losses, get_total_pnl, get_equity_curve,
         get_expectancy, get_profit_factor, get_avg_win_hold, get_avg_loss_hold,
@@ -507,9 +522,12 @@ def stats_page_layout_dynamic(trades, active_filter):
         ], className="stat-cards-row"),
     ], className="stats-section")
 
+    all_tags = set(tag for t in trades for tag in getattr(t, "tags", []) if tag)
+    filterbar = filter_bar(active_filter, all_tags, selected_tags)
+
     # --- Layout with filter bar ---
     return html.Div([
-        filter_buttons_row(active_filter),
+        filterbar,
         general_stats,
         streaks_top,
         html.Div([

@@ -14,6 +14,8 @@ def create_app():
     app.layout = html.Div([
         dcc.Location(id="url", refresh=False),
         dcc.Store(id="active-filter", data="all"),
+        # Hidden tag filter dropdown for Dash callback wiring
+        dcc.Dropdown(id="tag-filter-dropdown", options=[], value=[], multi=True, style={"display": "none"}),
         html.Div([
             html.Div("TradeCraft Journal", className="sidebar-title"),
             html.Div([

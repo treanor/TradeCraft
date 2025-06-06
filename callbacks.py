@@ -31,18 +31,18 @@ def register_callbacks(app):
 
     @app.callback(
         Output("page-content", "children"),
-        [Input("url", "pathname"), Input("active-filter", "data")],
+        [Input("url", "pathname"), Input("active-filter", "data"), Input("tag-filter-dropdown", "value")],
     )
-    def display_page(pathname, active_filter):
+    def display_page(pathname, active_filter, selected_tags):
         from sample_data import sample_trades
         from layout import stats_page_layout_dynamic
         if pathname == "/stats":
-            trades = filter_trades(sample_trades, active_filter or "this_week")
-            return stats_page_layout_dynamic(trades, active_filter or "this_week")
+            trades = filter_trades(sample_trades, active_filter or "this_week", selected_tags)
+            return stats_page_layout_dynamic(trades, active_filter or "this_week", selected_tags)
         elif pathname == "/calendar":
             return calendar_page_layout()
         else:
-            trades = filter_trades(sample_trades, active_filter or "this_week")
+            trades = filter_trades(sample_trades, active_filter or "this_week", selected_tags)
             wins = get_wins(trades)
             losses = get_losses(trades)
             pnl = get_total_pnl(trades)

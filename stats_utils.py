@@ -18,24 +18,35 @@ def get_total_pnl(trades):
 
 def filter_trades(trades, filter_key, tag_filter=None):
     import pandas as pd
+    from datetime import timedelta
     now = datetime.now()
     filtered = trades
+    def get_close_date(t):
+        # Use the exit leg's date for closed trades, else entry leg
+        if t.legs and len(t.legs) > 1:
+            return t.legs[-1].datetime.date()
+        elif t.legs:
+            return t.legs[0].datetime.date()
+        return None
     if filter_key == "all":
         filtered = trades
     elif filter_key == "today":
-        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.date() == now.date()]
+        filtered = [t for t in trades if get_close_date(t) == now.date()]
     elif filter_key == "yesterday":
         yest = now.date() - pd.Timedelta(days=1)
-        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.date() == yest]
+        filtered = [t for t in trades if get_close_date(t) == yest]
     elif filter_key == "this_week":
-        start = now - pd.Timedelta(days=now.weekday())
-        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.date() >= start.date()]
+        week_start = now - timedelta(days=now.weekday())
+        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end = week_start + timedelta(days=6)
+        filtered = [t for t in trades if get_close_date(t) and week_start.date() <= get_close_date(t) <= week_end.date()]
     elif filter_key == "last_week":
-        start = now - pd.Timedelta(days=now.weekday() + 7)
-        end = start + pd.Timedelta(days=6)
-        filtered = [t for t in trades if t.legs and start.date() <= t.legs[-1].datetime.date() <= end.date()]
+        week_start = now - timedelta(days=now.weekday() + 7)
+        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end = week_start + timedelta(days=6)
+        filtered = [t for t in trades if get_close_date(t) and week_start.date() <= get_close_date(t) <= week_end.date()]
     elif filter_key == "this_month":
-        filtered = [t for t in trades if t.legs and t.legs[-1].datetime.month == now.month and t.legs[-1].datetime.year == now.year]
+        filtered = [t for t in trades if get_close_date(t) and get_close_date(t).month == now.month and get_close_date(t).year == now.year]
     # Tag filter (intersection: trade must have at least one selected tag)
     if tag_filter:
         filtered = [t for t in filtered if any(tag in t.tags for tag in tag_filter)]
@@ -44,9 +55,13 @@ def filter_trades(trades, filter_key, tag_filter=None):
 def get_equity_curve(trades, filter_key="all"):
     from collections import defaultdict
     import pandas as pd
-    closed_trades = [t for t in trades if t.status.upper() in ("WIN", "LOSS") and len(t.legs) > 1]
+    # Filter trades first, so equity curve matches the filter (like the table)
+    filtered_trades = filter_trades(trades, filter_key)
+    # Only include closed trades (WIN or LOSS, with both entry and exit legs)
+    closed_trades = [t for t in filtered_trades if t.status.upper() in ("WIN", "LOSS") and len(t.legs) > 1]
     pnl_by_date = defaultdict(float)
     if filter_key in ("today", "yesterday"):
+        # Hourly equity curve for today/yesterday
         for t in closed_trades:
             entry = t.legs[0]
             exit = t.legs[1]
@@ -65,6 +80,7 @@ def get_equity_curve(trades, filter_key="all"):
             y.append(equity)
         return x, y
     else:
+        # Daily equity curve for all other filters
         for t in closed_trades:
             entry = t.legs[0]
             exit = t.legs[1]
@@ -73,7 +89,7 @@ def get_equity_curve(trades, filter_key="all"):
             pnl_by_date[close_date] += pnl
         if not pnl_by_date:
             return [], []
-        all_dates = pd.date_range(min(pnl_by_date.keys()), max(pnl_by_date.keys()), freq='B')
+        all_dates = pd.date_range(min(pnl_by_date.keys()), max(pnl_by_date.keys()), freq='D')
         x = []
         y = []
         equity = 0

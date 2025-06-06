@@ -1,0 +1,21 @@
+// app global css in SCSS form
+
+body, #q-app, .q-layout, .q-page-container, .q-page, .q-drawer {
+  background: #181e29 !important;
+  min-height: 100vh;
+}
+
+.q-drawer {
+  box-shadow: none !important;
+  border-right: 2px solid #222b36 !important;
+}
+
+.q-layout__shadow, .q-layout__shadow:before, .q-layout__shadow:after {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+}

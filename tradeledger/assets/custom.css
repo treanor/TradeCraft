@@ -30,3 +30,49 @@ body { background: #181c24 !important; color: #e0e6f0 !important; }
 .badge-win { background: #14532d; color: #4ade80; border-radius: 8px; padding: 2px 10px; font-size: 0.9em; }
 .badge-loss { background: #7f1d1d; color: #f87171; border-radius: 8px; padding: 2px 10px; font-size: 0.9em; }
 .badge-wash { background: #78350f; color: #facc15; border-radius: 8px; padding: 2px 10px; font-size: 0.9em; }
+/* --- Trade Modal Styles --- */
+.trade-modal-form {
+  background: none;
+  padding: 0;
+}
+.trade-table-header-row {
+  display: flex;
+  gap: 8px;
+  font-weight: 600;
+  color: #bfc7d5;
+  margin-bottom: 8px;
+}
+.trade-table-header {
+  flex: 1 1 0;
+  min-width: 70px;
+  text-align: left;
+}
+.trade-table-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Modal tweaks */
+.dash-bootstrap .modal-content {
+  background: #35394a;
+  color: #e0e6f0;
+  border-radius: 12px;
+  border: none;
+}
+.dash-bootstrap .modal-header {
+  background: #35394a;
+  border-bottom: 1px solid #23283a;
+}
+.dash-bootstrap .modal-footer {
+  background: #35394a;
+  border-top: 1px solid #23283a;
+}
+.dash-bootstrap .nav-tabs .nav-link.active {
+  background: #23283a;
+  color: #4ade80;
+  border: none;
+}
+.dash-bootstrap .nav-tabs .nav-link {
+  color: #bfc7d5;
+  border: none;
+}

@@ -87,3 +87,17 @@ Open an issue or start a discussion!
 
 ---
 
+
+## 💻 Vue Frontend
+
+A minimal Vue 3 interface is included under the `frontend/` directory. It consumes the sample trade data generated from the Python scripts and demonstrates how a dashboard could look using Vue instead of Dash.
+
+To generate the data and view the page locally:
+
+```bash
+python generate_sample_data.py
+cd frontend
+python -m http.server 8000
+```
+
+Then open [http://localhost:8000/index.html](http://localhost:8000/index.html) in your browser.

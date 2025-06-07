@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #181e2a;
+  color: #fff;
+}
+#app {
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: 200px;
+  background: #1a2236;
+  padding: 20px;
+}
+.sidebar .title {
+  font-size: 1.4em;
+  margin-bottom: 1em;
+  font-weight: bold;
+}
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+.sidebar li a {
+  color: #b0bec5;
+  text-decoration: none;
+  display: block;
+  padding: 8px 0;
+}
+.sidebar li a:hover {
+  color: #4fc3f7;
+}
+.content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+.stat-block {
+  padding: 10px;
+  margin: 5px;
+  background: #232b3e;
+  border-radius: 6px;
+  text-align: center;
+}
+.stat-label {
+  font-size: 0.8em;
+  color: #b0bec5;
+}
+.stat-value {
+  font-weight: bold;
+  font-size: 1.2em;
+}
+.win { color: #4caf50; }
+.loss { color: #f44336; }

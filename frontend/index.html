@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TradeCraft Journal - Vue</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="title">TradeCraft Journal</div>
+    <nav>
+      <ul>
+        <li><a href="#" @click.prevent="view='dashboard'">Dashboard</a></li>
+        <li><a href="#" @click.prevent="view='stats'">Stats</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main class="content">
+    <component :is="currentView" :trades="trades"></component>
+  </main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

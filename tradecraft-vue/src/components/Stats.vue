@@ -36,17 +36,29 @@
       </div>
       <div class="stats-charts-row">
         <div class="stats-chart-card">
-          <Line :data="equityCurveData" :options="equityChartOptions" style="height:220px; width:100%;" />
+          <Line
+            :data="equityCurveData"
+            :options="equityChartOptions"
+            style="height: 220px; width: 100%"
+          />
         </div>
       </div>
       <div class="stats-bar-charts-row">
         <div class="stats-bar-card">
           <div class="bar-title">Performance by Day of Week</div>
-          <Bar :data="dayOfWeekBarData" :options="dayOfWeekBarChartOptions" style="height:180px; width:100%;" />
+          <Bar
+            :data="dayOfWeekBarData"
+            :options="dayOfWeekBarChartOptions"
+            style="height: 180px; width: 100%"
+          />
         </div>
         <div class="stats-bar-card">
           <div class="bar-title">Performance by Hour</div>
-          <Bar :data="hourBarData" :options="hourBarChartOptions" style="height:180px; width:100%;" />
+          <Bar
+            :data="hourBarData"
+            :options="hourBarChartOptions"
+            style="height: 180px; width: 100%"
+          />
         </div>
       </div>
       <div class="stats-tables-row">
@@ -54,7 +66,13 @@
           <div class="table-title">Tag</div>
           <table class="stats-table">
             <thead>
-              <tr><th>Tag</th><th>Trades</th><th>PnL</th><th>PnL %</th><th>Weighted %</th></tr>
+              <tr>
+                <th>Tag</th>
+                <th>Trades</th>
+                <th>PnL</th>
+                <th>PnL %</th>
+                <th>Weighted %</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="row in tagTable" :key="row.tag">
@@ -71,7 +89,13 @@
           <div class="table-title">Symbol</div>
           <table class="stats-table">
             <thead>
-              <tr><th>Symbol</th><th>Trades</th><th>PnL</th><th>PnL %</th><th>Weighted %</th></tr>
+              <tr>
+                <th>Symbol</th>
+                <th>Trades</th>
+                <th>PnL</th>
+                <th>PnL %</th>
+                <th>Weighted %</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="row in symbolTable" :key="row.symbol">
@@ -90,10 +114,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import FilterButtons from './FilterButtons.vue';
-import { sampleTrades } from '../data/sampleTrades';
-import { Line, Bar } from 'vue-chartjs';
+import { ref, computed } from 'vue'
+import FilterButtons from './FilterButtons.vue'
+import { sampleTrades } from '../data/sampleTrades'
+import { Line, Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   Title,
@@ -104,9 +128,19 @@ import {
   PointElement,
   CategoryScale,
   LinearScale,
-  Filler
-} from 'chart.js';
-ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, PointElement, CategoryScale, LinearScale, Filler);
+  Filler,
+} from 'chart.js'
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  BarElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+)
 
 const FILTER_OPTIONS = [
   { label: 'All', value: 'all' },
@@ -116,69 +150,69 @@ const FILTER_OPTIONS = [
   { label: 'Last wk.', value: 'last_week' },
   { label: 'This mo.', value: 'this_month' },
   { label: 'Last mo.', value: 'last_month' },
-];
-const selectedFilter = ref('all');
+]
+const selectedFilter = ref('all')
 function filterTrades(trades, filter) {
-  const now = new Date();
+  const now = new Date()
   switch (filter) {
     case 'today': {
-      return trades.filter(t => {
-        const d = new Date(t.created_at);
-        return d.toDateString() === now.toDateString();
-      });
+      return trades.filter((t) => {
+        const d = new Date(t.created_at)
+        return d.toDateString() === now.toDateString()
+      })
     }
     case 'yesterday': {
-      const yesterday = new Date(now);
-      yesterday.setDate(now.getDate() - 1);
-      return trades.filter(t => {
-        const d = new Date(t.created_at);
-        return d.toDateString() === yesterday.toDateString();
-      });
+      const yesterday = new Date(now)
+      yesterday.setDate(now.getDate() - 1)
+      return trades.filter((t) => {
+        const d = new Date(t.created_at)
+        return d.toDateString() === yesterday.toDateString()
+      })
     }
     case 'this_week': {
-      const start = new Date(now);
-      start.setDate(now.getDate() - now.getDay());
-      start.setHours(0,0,0,0);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 7);
-      return trades.filter(t => {
-        const d = new Date(t.created_at);
-        return d >= start && d < end;
-      });
+      const start = new Date(now)
+      start.setDate(now.getDate() - now.getDay())
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(start)
+      end.setDate(start.getDate() + 7)
+      return trades.filter((t) => {
+        const d = new Date(t.created_at)
+        return d >= start && d < end
+      })
     }
     case 'last_week': {
-      const start = new Date(now);
-      start.setDate(now.getDate() - now.getDay() - 7);
-      start.setHours(0,0,0,0);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 7);
-      return trades.filter(t => {
-        const d = new Date(t.created_at);
-        return d >= start && d < end;
-      });
+      const start = new Date(now)
+      start.setDate(now.getDate() - now.getDay() - 7)
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(start)
+      end.setDate(start.getDate() + 7)
+      return trades.filter((t) => {
+        const d = new Date(t.created_at)
+        return d >= start && d < end
+      })
     }
     case 'this_month': {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      return trades.filter(t => {
-        const d = new Date(t.created_at);
-        return d >= start && d < end;
-      });
+      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      return trades.filter((t) => {
+        const d = new Date(t.created_at)
+        return d >= start && d < end
+      })
     }
     case 'last_month': {
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const end = new Date(now.getFullYear(), now.getMonth(), 1);
-      return trades.filter(t => {
-        const d = new Date(t.created_at);
-        return d >= start && d < end;
-      });
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const end = new Date(now.getFullYear(), now.getMonth(), 1)
+      return trades.filter((t) => {
+        const d = new Date(t.created_at)
+        return d >= start && d < end
+      })
     }
     case 'all':
     default:
-      return trades;
+      return trades
   }
 }
-const trades = computed(() => filterTrades(sampleTrades, selectedFilter.value));
+const trades = computed(() => filterTrades(sampleTrades, selectedFilter.value))
 
 // --- Stat Cards ---
 const statCards = computed(() => [
@@ -195,153 +229,158 @@ const statCards = computed(() => [
   { label: 'TOP WIN', value: topWin.value, class: 'pos' },
   { label: 'AVG DAILY VOL', value: avgDailyVol.value, class: '' },
   { label: 'AVG SIZE', value: avgSize.value, class: '' },
-]);
+])
 // --- Stat Card Calculations ---
 const winRate = computed(() => {
-  const closed = trades.value.filter(t => t.status === 'WIN' || t.status === 'LOSS');
-  if (!closed.length) return '-';
-  const wins = closed.filter(t => t.status === 'WIN').length;
-  return `${Math.round((wins / closed.length) * 100)}%`;
-});
+  const closed = trades.value.filter((t) => t.status === 'WIN' || t.status === 'LOSS')
+  if (!closed.length) return '-'
+  const wins = closed.filter((t) => t.status === 'WIN').length
+  return `${Math.round((wins / closed.length) * 100)}%`
+})
 const expectancy = computed(() => {
-  const closed = trades.value.filter(t => t.status === 'WIN' || t.status === 'LOSS');
-  if (!closed.length) return '-';
-  const avgWin = closed.filter(t => t.status === 'WIN').reduce((sum, t) => sum + getPnl(t), 0) / (closed.filter(t => t.status === 'WIN').length || 1);
-  const avgLoss = closed.filter(t => t.status === 'LOSS').reduce((sum, t) => sum + getPnl(t), 0) / (closed.filter(t => t.status === 'LOSS').length || 1);
-  const winRateNum = closed.filter(t => t.status === 'WIN').length / closed.length;
-  const lossRateNum = closed.filter(t => t.status === 'LOSS').length / closed.length;
-  return (avgWin * winRateNum + avgLoss * lossRateNum).toFixed(2);
-});
+  const closed = trades.value.filter((t) => t.status === 'WIN' || t.status === 'LOSS')
+  if (!closed.length) return '-'
+  const avgWin =
+    closed.filter((t) => t.status === 'WIN').reduce((sum, t) => sum + getPnl(t), 0) /
+    (closed.filter((t) => t.status === 'WIN').length || 1)
+  const avgLoss =
+    closed.filter((t) => t.status === 'LOSS').reduce((sum, t) => sum + getPnl(t), 0) /
+    (closed.filter((t) => t.status === 'LOSS').length || 1)
+  const winRateNum = closed.filter((t) => t.status === 'WIN').length / closed.length
+  const lossRateNum = closed.filter((t) => t.status === 'LOSS').length / closed.length
+  return (avgWin * winRateNum + avgLoss * lossRateNum).toFixed(2)
+})
 const profitFactor = computed(() => {
-  const wins = trades.value.filter(t => t.status === 'WIN');
-  const losses = trades.value.filter(t => t.status === 'LOSS');
-  const winSum = wins.reduce((sum, t) => sum + getPnl(t), 0);
-  const lossSum = losses.reduce((sum, t) => sum + Math.abs(getPnl(t)), 0);
-  if (lossSum === 0) return '-';
-  return (winSum / lossSum).toFixed(2);
-});
+  const wins = trades.value.filter((t) => t.status === 'WIN')
+  const losses = trades.value.filter((t) => t.status === 'LOSS')
+  const winSum = wins.reduce((sum, t) => sum + getPnl(t), 0)
+  const lossSum = losses.reduce((sum, t) => sum + Math.abs(getPnl(t)), 0)
+  if (lossSum === 0) return '-'
+  return (winSum / lossSum).toFixed(2)
+})
 const avgWinHold = computed(() => {
-  const wins = trades.value.filter(t => t.status === 'WIN' && t.legs.length > 1);
-  if (!wins.length) return '-';
-  const mins = wins.reduce((sum, t) => sum + getHoldMins(t), 0) / wins.length;
-  return minsToDuration(mins);
-});
+  const wins = trades.value.filter((t) => t.status === 'WIN' && t.legs.length > 1)
+  if (!wins.length) return '-'
+  const mins = wins.reduce((sum, t) => sum + getHoldMins(t), 0) / wins.length
+  return minsToDuration(mins)
+})
 const avgLossHold = computed(() => {
-  const losses = trades.value.filter(t => t.status === 'LOSS' && t.legs.length > 1);
-  if (!losses.length) return '-';
-  const mins = losses.reduce((sum, t) => sum + getHoldMins(t), 0) / losses.length;
-  return minsToDuration(mins);
-});
+  const losses = trades.value.filter((t) => t.status === 'LOSS' && t.legs.length > 1)
+  if (!losses.length) return '-'
+  const mins = losses.reduce((sum, t) => sum + getHoldMins(t), 0) / losses.length
+  return minsToDuration(mins)
+})
 const avgWin = computed(() => {
-  const wins = trades.value.filter(t => t.status === 'WIN');
-  if (!wins.length) return '-';
-  const avg = wins.reduce((sum, t) => sum + getPnl(t), 0) / wins.length;
-  return `$${avg.toFixed(2)}`;
-});
+  const wins = trades.value.filter((t) => t.status === 'WIN')
+  if (!wins.length) return '-'
+  const avg = wins.reduce((sum, t) => sum + getPnl(t), 0) / wins.length
+  return `$${avg.toFixed(2)}`
+})
 const avgLoss = computed(() => {
-  const losses = trades.value.filter(t => t.status === 'LOSS');
-  if (!losses.length) return '-';
-  const avg = losses.reduce((sum, t) => sum + getPnl(t), 0) / losses.length;
-  return `$${avg.toFixed(2)}`;
-});
-const winStreak = computed(() => getStreak(trades.value, 'WIN'));
-const lossStreak = computed(() => getStreak(trades.value, 'LOSS'));
+  const losses = trades.value.filter((t) => t.status === 'LOSS')
+  if (!losses.length) return '-'
+  const avg = losses.reduce((sum, t) => sum + getPnl(t), 0) / losses.length
+  return `$${avg.toFixed(2)}`
+})
+const winStreak = computed(() => getStreak(trades.value, 'WIN'))
+const lossStreak = computed(() => getStreak(trades.value, 'LOSS'))
 const topLoss = computed(() => {
-  const losses = trades.value.filter(t => t.status === 'LOSS');
-  if (!losses.length) return '-';
-  const min = Math.min(...losses.map(getPnl));
-  const pct = Math.min(...losses.map(getPnlPct));
-  return `$${min.toFixed(2)} (${pct.toFixed(2)}%)`;
-});
+  const losses = trades.value.filter((t) => t.status === 'LOSS')
+  if (!losses.length) return '-'
+  const min = Math.min(...losses.map(getPnl))
+  const pct = Math.min(...losses.map(getPnlPct))
+  return `$${min.toFixed(2)} (${pct.toFixed(2)}%)`
+})
 const topWin = computed(() => {
-  const wins = trades.value.filter(t => t.status === 'WIN');
-  if (!wins.length) return '-';
-  const max = Math.max(...wins.map(getPnl));
-  const pct = Math.max(...wins.map(getPnlPct));
-  return `$${max.toFixed(2)} (${pct.toFixed(2)}%)`;
-});
+  const wins = trades.value.filter((t) => t.status === 'WIN')
+  if (!wins.length) return '-'
+  const max = Math.max(...wins.map(getPnl))
+  const pct = Math.max(...wins.map(getPnlPct))
+  return `$${max.toFixed(2)} (${pct.toFixed(2)}%)`
+})
 const avgDailyVol = computed(() => {
-  if (!trades.value.length) return '-';
-  const days = new Set(trades.value.map(t => new Date(t.created_at).toDateString())).size;
-  return Math.round(trades.value.length / days);
-});
+  if (!trades.value.length) return '-'
+  const days = new Set(trades.value.map((t) => new Date(t.created_at).toDateString())).size
+  return Math.round(trades.value.length / days)
+})
 const avgSize = computed(() => {
-  if (!trades.value.length) return '-';
-  const total = trades.value.reduce((sum, t) => sum + (t.legs[0]?.quantity || 0), 0);
-  return Math.round(total / trades.value.length);
-});
+  if (!trades.value.length) return '-'
+  const total = trades.value.reduce((sum, t) => sum + (t.legs[0]?.quantity || 0), 0)
+  return Math.round(total / trades.value.length)
+})
 // --- Helpers ---
 function getPnl(trade) {
-  const entry = trade.legs[0];
-  const exit = trade.legs[1];
+  const entry = trade.legs[0]
+  const exit = trade.legs[1]
   if (entry && exit) {
-    const entTot = entry.quantity * entry.price + (entry.fee || 0);
-    const extTot = exit.quantity * exit.price - (exit.fee || 0);
-    return extTot - entTot;
+    const entTot = entry.quantity * entry.price + (entry.fee || 0)
+    const extTot = exit.quantity * exit.price - (exit.fee || 0)
+    return extTot - entTot
   }
-  return 0;
+  return 0
 }
 function getPnlPct(trade) {
-  const entry = trade.legs[0];
-  const exit = trade.legs[1];
+  const entry = trade.legs[0]
+  const exit = trade.legs[1]
   if (entry && exit) {
-    const entTot = entry.quantity * entry.price + (entry.fee || 0);
-    const extTot = exit.quantity * exit.price - (exit.fee || 0);
+    const entTot = entry.quantity * entry.price + (entry.fee || 0)
+    const extTot = exit.quantity * exit.price - (exit.fee || 0)
     if (entTot !== 0) {
-      return ((extTot - entTot) / entTot) * 100;
+      return ((extTot - entTot) / entTot) * 100
     }
   }
-  return 0;
+  return 0
 }
 function getHoldMins(trade) {
-  const entry = trade.legs[0];
-  const exit = trade.legs[1];
+  const entry = trade.legs[0]
+  const exit = trade.legs[1]
   if (entry && exit) {
-    const ms = new Date(exit.datetime) - new Date(entry.datetime);
-    return Math.floor(ms / 60000);
+    const ms = new Date(exit.datetime) - new Date(entry.datetime)
+    return Math.floor(ms / 60000)
   }
-  return 0;
+  return 0
 }
 function minsToDuration(mins) {
-  if (mins < 1) return '<1 MIN';
-  if (mins < 60) return `${Math.round(mins)} MIN`;
-  const hours = mins / 60;
-  if (hours < 24) return `${hours.toFixed(1)} Hrs`;
-  const days = hours / 24;
-  return `${days.toFixed(1)} Days`;
+  if (mins < 1) return '<1 MIN'
+  if (mins < 60) return `${Math.round(mins)} MIN`
+  const hours = mins / 60
+  if (hours < 24) return `${hours.toFixed(1)} Hrs`
+  const days = hours / 24
+  return `${days.toFixed(1)} Days`
 }
 function getStreak(trades, status) {
-  let max = 0, cur = 0;
+  let max = 0,
+    cur = 0
   for (const t of trades) {
     if (t.status === status) {
-      cur++;
-      if (cur > max) max = cur;
+      cur++
+      if (cur > max) max = cur
     } else {
-      cur = 0;
+      cur = 0
     }
   }
-  return max;
+  return max
 }
 // --- Equity Curve Chart ---
 function getEquityCurve(trades) {
-  const sorted = [...trades].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-  let equity = 0;
-  const labels = [];
-  const data = [];
+  const sorted = [...trades].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  let equity = 0
+  const labels = []
+  const data = []
   for (const t of sorted) {
     if (t.legs.length > 1) {
-      const entry = t.legs[0];
-      const exit = t.legs[1];
-      const entTot = entry.quantity * entry.price + (entry.fee || 0);
-      const extTot = exit.quantity * exit.price - (exit.fee || 0);
-      equity += extTot - entTot;
-      labels.push(new Date(t.created_at).toLocaleDateString());
-      data.push(equity);
+      const entry = t.legs[0]
+      const exit = t.legs[1]
+      const entTot = entry.quantity * entry.price + (entry.fee || 0)
+      const extTot = exit.quantity * exit.price - (exit.fee || 0)
+      equity += extTot - entTot
+      labels.push(new Date(t.created_at).toLocaleDateString())
+      data.push(equity)
     }
   }
-  return { labels, data };
+  return { labels, data }
 }
-const equityCurve = computed(() => getEquityCurve(trades.value));
+const equityCurve = computed(() => getEquityCurve(trades.value))
 const equityCurveData = computed(() => ({
   labels: equityCurve.value.labels,
   datasets: [
@@ -352,82 +391,97 @@ const equityCurveData = computed(() => ({
       backgroundColor: 'rgba(79,195,247,0.08)',
       borderWidth: 3,
       fill: 'start',
-      tension: 0.4
-    }
-  ]
-}));
+      tension: 0.4,
+    },
+  ],
+}))
 const equityChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { display: false }, title: { display: false } },
-  elements: { line: { borderColor: '#4fc3f7', borderWidth: 3, fill: 'start', backgroundColor: 'rgba(79,195,247,0.08)' }, point: { radius: 0 } },
+  elements: {
+    line: {
+      borderColor: '#4fc3f7',
+      borderWidth: 3,
+      fill: 'start',
+      backgroundColor: 'rgba(79,195,247,0.08)',
+    },
+    point: { radius: 0 },
+  },
   scales: {
     x: { ticks: { color: '#b0bec5', font: { size: 12 } }, grid: { color: '#232b3b' } },
-    y: { ticks: { color: '#b0bec5', font: { size: 12 } }, grid: { color: '#232b3b' } }
-  }
-};
+    y: { ticks: { color: '#b0bec5', font: { size: 12 } }, grid: { color: '#232b3b' } },
+  },
+}
 // --- Bar Charts ---
-// Use refs to store chart data for stability
-import { ref as vueRef, watch } from 'vue';
-const dayOfWeekBarData = vueRef({ labels: [], datasets: [] });
-const hourBarData = vueRef({ labels: [], datasets: [] });
 
-function updateDayOfWeekBarData() {
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const pnlByDay = Array(7).fill(0);
-  trades.value.forEach(t => {
-    const d = new Date(t.created_at).getDay();
-    pnlByDay[d] += getPnl(t);
-  });
-  // Find min/max for symmetric axis
-  const min = Math.min(0, ...pnlByDay);
-  const max = Math.max(0, ...pnlByDay);
-  dayOfWeekBarData.value = {
+const dayOfWeekBarData = computed(() => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const pnlByDay = Array(7).fill(0)
+  trades.value.forEach((t) => {
+    const d = new Date(t.created_at).getDay()
+    pnlByDay[d] += getPnl(t)
+  })
+  const min = Math.min(0, ...pnlByDay)
+  const max = Math.max(0, ...pnlByDay)
+  return {
     labels: days,
-    datasets: [{
-      label: 'PnL',
-      data: pnlByDay,
-      backgroundColor: pnlByDay.map(v => v >= 0 ? '#4be37a' : '#ff5c5c'),
-      borderRadius: 10,
-      barThickness: 22,
-      categoryPercentage: 0.7,
-      minBarLength: 4
-    }],
+    datasets: [
+      {
+        label: 'PnL',
+        data: pnlByDay,
+        backgroundColor: pnlByDay.map((v) => (v >= 0 ? '#4be37a' : '#ff5c5c')),
+        borderRadius: 10,
+        barThickness: 22,
+        categoryPercentage: 0.7,
+        minBarLength: 4,
+      },
+    ],
     min,
-    max
-  };
-}
-function updateHourBarData() {
+    max,
+  }
+})
+
+const hourBarData = computed(() => {
   const hourLabels = [
-    '8 AM','9 AM','10 AM','11 AM','12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM'
-  ];
-  const hours = Array(12).fill(0);
-  trades.value.forEach(t => {
-    const d = new Date(t.created_at).getHours();
-    const idx = Math.max(0, Math.min(11, d - 8));
-    if (idx >= 0 && idx < 12) hours[idx] += getPnl(t);
-  });
-  const min = Math.min(0, ...hours);
-  const max = Math.max(0, ...hours);
-  hourBarData.value = {
+    '8 AM',
+    '9 AM',
+    '10 AM',
+    '11 AM',
+    '12 PM',
+    '1 PM',
+    '2 PM',
+    '3 PM',
+    '4 PM',
+    '5 PM',
+    '6 PM',
+    '7 PM',
+  ]
+  const hours = Array(12).fill(0)
+  trades.value.forEach((t) => {
+    const d = new Date(t.created_at).getHours()
+    const idx = Math.max(0, Math.min(11, d - 8))
+    if (idx >= 0 && idx < 12) hours[idx] += getPnl(t)
+  })
+  const min = Math.min(0, ...hours)
+  const max = Math.max(0, ...hours)
+  return {
     labels: hourLabels,
-    datasets: [{
-      label: 'PnL',
-      data: hours,
-      backgroundColor: hours.map(v => v >= 0 ? '#4be37a' : '#ff5c5c'),
-      borderRadius: 10,
-      barThickness: 22,
-      categoryPercentage: 0.7,
-      minBarLength: 4
-    }],
+    datasets: [
+      {
+        label: 'PnL',
+        data: hours,
+        backgroundColor: hours.map((v) => (v >= 0 ? '#4be37a' : '#ff5c5c')),
+        borderRadius: 10,
+        barThickness: 22,
+        categoryPercentage: 0.7,
+        minBarLength: 4,
+      },
+    ],
     min,
-    max
-  };
-}
-watch(trades, () => {
-  updateDayOfWeekBarData();
-  updateHourBarData();
-}, { immediate: true });
+    max,
+  }
+})
 
 const dayOfWeekBarChartOptions = computed(() => ({
   indexAxis: 'y',
@@ -441,8 +495,8 @@ const dayOfWeekBarChartOptions = computed(() => ({
       titleColor: '#e6eaf3',
       bodyColor: '#e6eaf3',
       borderColor: '#4fc3f7',
-      borderWidth: 1
-    }
+      borderWidth: 1,
+    },
   },
   scales: {
     x: {
@@ -451,28 +505,30 @@ const dayOfWeekBarChartOptions = computed(() => ({
         borderColor: '#232b3b',
         drawTicks: false,
         zeroLineColor: '#b0bec5',
-        zeroLineWidth: 2
+        zeroLineWidth: 2,
       },
       ticks: {
         color: '#b0bec5',
         font: { size: 13 },
-        callback: function(value) { return value === 0 ? '0' : value; }
+        callback: function (value) {
+          return value === 0 ? '0' : value
+        },
       },
-      beginAtZero: true
+      beginAtZero: true,
     },
     y: {
       grid: {
         color: '#232b3b',
         borderColor: '#232b3b',
-        drawTicks: false
+        drawTicks: false,
       },
       ticks: {
         color: '#b0bec5',
-        font: { size: 13 }
-      }
-    }
-  }
-}));
+        font: { size: 13 },
+      },
+    },
+  },
+}))
 const hourBarChartOptions = computed(() => ({
   indexAxis: 'y',
   responsive: true,
@@ -485,8 +541,8 @@ const hourBarChartOptions = computed(() => ({
       titleColor: '#e6eaf3',
       bodyColor: '#e6eaf3',
       borderColor: '#4fc3f7',
-      borderWidth: 1
-    }
+      borderWidth: 1,
+    },
   },
   scales: {
     x: {
@@ -495,66 +551,68 @@ const hourBarChartOptions = computed(() => ({
         borderColor: '#232b3b',
         drawTicks: false,
         zeroLineColor: '#b0bec5',
-        zeroLineWidth: 2
+        zeroLineWidth: 2,
       },
       ticks: {
         color: '#b0bec5',
         font: { size: 13 },
-        callback: function(value) { return value === 0 ? '0' : value; }
+        callback: function (value) {
+          return value === 0 ? '0' : value
+        },
       },
-      beginAtZero: true
+      beginAtZero: true,
     },
     y: {
       grid: {
         color: '#232b3b',
         borderColor: '#232b3b',
-        drawTicks: false
+        drawTicks: false,
       },
       ticks: {
         color: '#b0bec5',
-        font: { size: 13 }
-      }
-    }
-  }
-}));
+        font: { size: 13 },
+      },
+    },
+  },
+}))
 // --- Tables ---
 const tagTable = computed(() => {
-  const tagMap = {};
-  trades.value.forEach(t => {
-    (t.tags.length ? t.tags : ['--NO TAGS--']).forEach(tag => {
-      if (!tagMap[tag]) tagMap[tag] = { tag, trades: 0, pnl: 0, pnlPct: 0 };
-      tagMap[tag].trades++;
-      tagMap[tag].pnl += getPnl(t);
-      tagMap[tag].pnlPct += getPnlPct(t);
-    });
-  });
-  const totalTrades = trades.value.length || 1;
-  return Object.values(tagMap).map(row => ({
+  const tagMap = {}
+  trades.value.forEach((t) => {
+    ;(t.tags.length ? t.tags : ['--NO TAGS--']).forEach((tag) => {
+      if (!tagMap[tag]) tagMap[tag] = { tag, trades: 0, pnl: 0, pnlPct: 0 }
+      tagMap[tag].trades++
+      tagMap[tag].pnl += getPnl(t)
+      tagMap[tag].pnlPct += getPnlPct(t)
+    })
+  })
+  const totalTrades = trades.value.length || 1
+  return Object.values(tagMap).map((row) => ({
     ...row,
     pnl: `$${row.pnl.toFixed(2)}`,
     pnlClass: row.pnl >= 0 ? 'pos' : 'neg',
     pnlPct: `${(row.pnlPct / row.trades).toFixed(2)}%`,
-    weightedPct: `${((row.trades / totalTrades) * 100).toFixed(2)}%`
-  }));
-});
+    weightedPct: `${((row.trades / totalTrades) * 100).toFixed(2)}%`,
+  }))
+})
 const symbolTable = computed(() => {
-  const symMap = {};
-  trades.value.forEach(t => {
-    const sym = t.symbol;
-    if (!symMap[sym]) symMap[sym] = { symbol: sym, trades: 0, pnl: 0, pnlPct: 0 };
-    symMap[sym].trades++;
-    symMap[sym].pnl += getPnl(t);
-    symMap[sym].pnlPct += getPnlPct(t);
-  });
-  const totalTrades = trades.value.length || 1;
-  return Object.values(symMap).map(row => ({
+  const symMap = {}
+  trades.value.forEach((t) => {
+    const sym = t.symbol
+    if (!symMap[sym]) symMap[sym] = { symbol: sym, trades: 0, pnl: 0, pnlPct: 0 }
+    symMap[sym].trades++
+    symMap[sym].pnl += getPnl(t)
+    symMap[sym].pnlPct += getPnlPct(t)
+  })
+  const totalTrades = trades.value.length || 1
+  return Object.values(symMap).map((row) => ({
     ...row,
     pnl: `$${row.pnl.toFixed(2)}`,
     pnlClass: row.pnl >= 0 ? 'pos' : 'neg',
     pnlPct: `${(row.pnlPct / row.trades).toFixed(2)}%`,
-    weightedPct: `${((row.trades / totalTrades) * 100).toFixed(2)}%`
-  }));
-});
+    weightedPct: `${((row.trades / totalTrades) * 100).toFixed(2)}%`,
+  }))
+})
 </script>
 
 <style scoped>
@@ -577,7 +635,7 @@ const symbolTable = computed(() => {
   background: #181f2a;
   padding: 1.5rem 0.7rem 1rem 0.7rem;
   border-right: 1px solid #232b3b;
-  box-shadow: 2px 0 16px 0 rgba(0,0,0,0.10);
+  box-shadow: 2px 0 16px 0 rgba(0, 0, 0, 0.1);
 }
 .logo {
   font-size: 1.7rem;
@@ -591,7 +649,10 @@ const symbolTable = computed(() => {
   justify-content: center;
   width: 100%;
 }
-.logo span { font-weight: 800; letter-spacing: 2px; }
+.logo span {
+  font-weight: 800;
+  letter-spacing: 2px;
+}
 .account-section {
   margin-bottom: 1.2rem;
   width: 100%;
@@ -606,12 +667,17 @@ const symbolTable = computed(() => {
   font-size: 1.25rem;
   font-weight: 700;
 }
-.account-cash, .account-active {
+.account-cash,
+.account-active {
   font-size: 0.93rem;
   margin-top: 0.1rem;
 }
-.account-cash .neg { color: #ff5c5c; }
-.account-active .pos { color: #4be37a; }
+.account-cash .neg {
+  color: #ff5c5c;
+}
+.account-active .pos {
+  color: #4be37a;
+}
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -619,18 +685,22 @@ const symbolTable = computed(() => {
   width: 100%;
   margin-bottom: 1.2rem;
 }
-.sidebar-nav a, .sidebar-nav .router-link-active {
+.sidebar-nav a,
+.sidebar-nav .router-link-active {
   color: #a3adc2;
   text-decoration: none;
   font-size: 1.05rem;
   padding: 0.45rem 0.7rem;
   border-radius: 8px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-.sidebar-nav .router-link-active, .sidebar-nav a:hover {
+.sidebar-nav .router-link-active,
+.sidebar-nav a:hover {
   background: #232b3b;
   color: #fff;
 }
@@ -660,15 +730,32 @@ const symbolTable = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.07);
 }
-.btn-blue { background: #2b6cb0; color: #fff; }
-.btn-blue:hover { background: #3182ce; }
-.btn-red { background: #c53030; color: #fff; }
-.btn-red:hover { background: #e53e3e; }
-.btn-yellow { background: #ecc94b; color: #181f2a; }
-.btn-yellow:hover { background: #faf089; }
-.btn .icon { font-size: 1.1em; }
+.btn-blue {
+  background: #2b6cb0;
+  color: #fff;
+}
+.btn-blue:hover {
+  background: #3182ce;
+}
+.btn-red {
+  background: #c53030;
+  color: #fff;
+}
+.btn-red:hover {
+  background: #e53e3e;
+}
+.btn-yellow {
+  background: #ecc94b;
+  color: #181f2a;
+}
+.btn-yellow:hover {
+  background: #faf089;
+}
+.btn .icon {
+  font-size: 1.1em;
+}
 .sidebar-footer {
   margin-top: auto;
   color: #a3adc2;
@@ -718,7 +805,7 @@ const symbolTable = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
   border: 2px solid transparent;
   transition: border 0.2s;
 }
@@ -735,8 +822,12 @@ const symbolTable = computed(() => {
   color: #fff;
   letter-spacing: 1px;
 }
-.stat-value.pos { color: #4be37a; }
-.stat-value.neg { color: #ff5c5c; }
+.stat-value.pos {
+  color: #4be37a;
+}
+.stat-value.neg {
+  color: #ff5c5c;
+}
 .stats-charts-row {
   margin-bottom: 1.5rem;
 }
@@ -744,7 +835,7 @@ const symbolTable = computed(() => {
   background: #232b3b;
   border-radius: 18px;
   padding: 1.2rem 1.5rem 1.5rem 1.5rem;
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.13);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.13);
   min-height: 220px;
   width: 100%;
   margin-bottom: 0.7rem;
@@ -758,7 +849,7 @@ const symbolTable = computed(() => {
   background: #232b3b;
   border-radius: 18px;
   padding: 1.2rem 1.5rem 1.5rem 1.5rem;
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.13);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.13);
   min-width: 0;
   flex: 1 1 0;
   display: flex;
@@ -781,7 +872,7 @@ const symbolTable = computed(() => {
   background: #232b3b;
   border-radius: 18px;
   padding: 1.2rem 1.5rem 1.5rem 1.5rem;
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.13);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.13);
   min-width: 0;
   flex: 1 1 0;
   display: flex;
@@ -803,9 +894,10 @@ const symbolTable = computed(() => {
   background: #232b3b;
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
 }
-.stats-table th, .stats-table td {
+.stats-table th,
+.stats-table td {
   padding: 0.45rem 0.5rem;
   text-align: center;
 }
@@ -833,7 +925,13 @@ const symbolTable = computed(() => {
   font-weight: 700;
 }
 @media (max-width: 1200px) {
-  .stats-cards-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-  .stats-bar-charts-row, .stats-tables-row { flex-direction: column; gap: 0.7rem; }
+  .stats-cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+  .stats-bar-charts-row,
+  .stats-tables-row {
+    flex-direction: column;
+    gap: 0.7rem;
+  }
 }
 </style>

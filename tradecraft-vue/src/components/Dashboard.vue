@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard dark-theme">
     <aside class="sidebar">
-      <div class="logo">Stonk Journal</div>
+      <div class="logo">🦾 <span>Stonk Journal</span></div>
       <div class="account-section">
         <div class="account-label">Default Account</div>
         <div class="account-balance">$788.00</div>
@@ -9,16 +9,16 @@
         <div class="account-active">Active: <span class="pos">$1,973.00</span></div>
       </div>
       <nav class="sidebar-nav">
-        <RouterLink to="/">Dashboard</RouterLink>
-        <RouterLink to="/stats">Stats</RouterLink>
-        <a class="disabled">Calendar</a>
-        <a class="disabled">Settings</a>
-        <a class="disabled">Help</a>
+        <RouterLink to="/">🏠 Dashboard</RouterLink>
+        <RouterLink to="/stats">📊 Stats</RouterLink>
+        <a class="disabled">📅 Calendar</a>
+        <a class="disabled">⚙️ Settings</a>
+        <a class="disabled">❓ Help</a>
       </nav>
       <div class="sidebar-actions">
-        <button class="btn btn-blue">New Trade</button>
-        <button class="btn btn-red">New Setup</button>
-        <button class="btn btn-yellow">New Note</button>
+        <button class="btn btn-blue"><span class="icon">＋</span> New Trade</button>
+        <button class="btn btn-red"><span class="icon">★</span> New Setup</button>
+        <button class="btn btn-yellow"><span class="icon">📝</span> New Note</button>
       </div>
       <div class="sidebar-footer">
         <small>Support this free platform with a <span>☕</span> donation or membership.</small>
@@ -28,16 +28,16 @@
       <div class="dashboard-header">
         <FilterButtons v-model="selectedFilter" :options="FILTER_OPTIONS" />
         <div class="dashboard-metrics">
-          <div class="metric-card wins">WINS <span>{{ wins }}</span></div>
-          <div class="metric-card losses">LOSSES <span>{{ losses }}</span></div>
-          <div class="metric-card open">OPEN <span>{{ open }}</span></div>
-          <div class="metric-card wash">WASH <span>{{ wash }}</span></div>
-          <div class="metric-card avgw">AVG W <span>{{ avgW }}</span></div>
-          <div class="metric-card avgl">AVG L <span>{{ avgL }}</span></div>
-          <div class="metric-card pnl">PnL <span>{{ pnl }}</span></div>
+          <div class="metric-card wins"><span class="metric-label">WINS</span><span class="metric-value">{{ wins }}</span></div>
+          <div class="metric-card losses"><span class="metric-label">LOSSES</span><span class="metric-value">{{ losses }}</span></div>
+          <div class="metric-card open"><span class="metric-label">OPEN</span><span class="metric-value">{{ open }}</span></div>
+          <div class="metric-card wash"><span class="metric-label">WASH</span><span class="metric-value">{{ wash }}</span></div>
+          <div class="metric-card avgw"><span class="metric-label">AVG W</span><span class="metric-value">{{ avgW }}</span></div>
+          <div class="metric-card avgl"><span class="metric-label">AVG L</span><span class="metric-value">{{ avgL }}</span></div>
+          <div class="metric-card pnl"><span class="metric-label">PnL</span><span class="metric-value">{{ pnl }}</span></div>
         </div>
       </div>
-      <div class="dashboard-chart-block">
+      <div class="dashboard-chart-block chart-shadow">
         <Line
           v-if="equityCurve.data.length > 0"
           :data="{ labels: equityCurve.labels, datasets: [{ data: equityCurve.data, label: 'PnL', fill: true, borderColor: '#4fc3f7', backgroundColor: 'rgba(79,195,247,0.08)' }] }"
@@ -370,10 +370,10 @@ const equityCurveData = computed(() => {
 
 <style scoped>
 .dashboard.dark-theme {
-  /* Remove flex layout to avoid double spacing with fixed sidebar */
   min-height: 100vh;
   background: #11141b;
   color: #e6eaf3;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 }
 .sidebar {
   position: fixed;
@@ -384,69 +384,41 @@ const equityCurveData = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: 240px; /* Adjusted from 320px to 240px for a more compact sidebar */
+  width: 210px;
   background: #181f2a;
-  padding: 2rem 1.2rem 1rem 1.2rem;
+  padding: 1.5rem 0.7rem 1rem 0.7rem;
   border-right: 1px solid #232b3b;
-}
-/* Remove horizontal fill overrides */
-.sidebar > * {
-  flex: unset;
-  min-width: unset;
-}
-.sidebar-nav, .sidebar-actions {
-  flex-direction: column !important;
-  gap: 0.5rem;
-  width: unset;
-  justify-content: unset;
-  align-items: unset;
-  display: flex;
-}
-.sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-  align-items: center; /* Center buttons horizontally */
-}
-.sidebar-footer {
-  width: 100%;
-  text-align: center;
+  box-shadow: 2px 0 16px 0 rgba(0,0,0,0.10);
 }
 .logo {
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: 1.7rem;
+  font-weight: 900;
   color: #fff;
-  margin-bottom: 2.5rem;
-  letter-spacing: 1px;
-  /* Remove the Vue logo SVG if present */
-  background: none !important;
-  height: auto !important;
-  width: auto !important;
-  display: block;
-}
-/* Hide the Vue logo SVG if it is rendered by a parent or global style */
-.sidebar img[src*='logo.svg'],
-.sidebar svg,
-.logo img,
-.logo svg {
-  display: none !important;
-}
-.account-section {
   margin-bottom: 2rem;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
+}
+.logo span { font-weight: 800; letter-spacing: 2px; }
+.account-section {
+  margin-bottom: 1.2rem;
+  width: 100%;
 }
 .account-label {
   color: #a3adc2;
-  font-size: 0.95rem;
-  margin-bottom: 0.25rem;
+  font-size: 0.93rem;
+  margin-bottom: 0.15rem;
 }
 .account-balance {
   color: #4be37a;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 .account-cash, .account-active {
-  font-size: 0.95rem;
+  font-size: 0.93rem;
   margin-top: 0.1rem;
 }
 .account-cash .neg { color: #ff5c5c; }
@@ -454,19 +426,20 @@ const equityCurveData = computed(() => {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
   width: 100%;
-  justify-content: flex-start;
-  align-items: flex-start;
-  margin-bottom: 2rem;
+  margin-bottom: 1.2rem;
 }
 .sidebar-nav a, .sidebar-nav .router-link-active {
   color: #a3adc2;
   text-decoration: none;
-  font-size: 1.1rem;
-  padding: 0.5rem 0.75rem;
+  font-size: 1.05rem;
+  padding: 0.45rem 0.7rem;
   border-radius: 8px;
   transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .sidebar-nav .router-link-active, .sidebar-nav a:hover {
   background: #232b3b;
@@ -479,21 +452,26 @@ const equityCurveData = computed(() => {
 .sidebar-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-  align-items: center; /* Center buttons horizontally */
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+  align-items: center;
+  width: 100%;
 }
 .btn {
   border: none;
   border-radius: 8px;
   font-size: 1rem;
-  font-weight: 600;
-  padding: 0.7rem 0;
+  font-weight: 700;
+  padding: 0.6rem 0;
   cursor: pointer;
   transition: background 0.2s;
-  width: 180px; /* Set a fixed width for all buttons */
+  width: 160px;
   text-align: center;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
 }
 .btn-blue { background: #2b6cb0; color: #fff; }
 .btn-blue:hover { background: #3182ce; }
@@ -501,21 +479,23 @@ const equityCurveData = computed(() => {
 .btn-red:hover { background: #e53e3e; }
 .btn-yellow { background: #ecc94b; color: #181f2a; }
 .btn-yellow:hover { background: #faf089; }
+.btn .icon { font-size: 1.1em; }
 .sidebar-footer {
   margin-top: auto;
   color: #a3adc2;
   font-size: 0.9rem;
   text-align: center;
+  width: 100%;
 }
 .dashboard-main {
   position: fixed;
   top: 0;
-  left: 240px; /* Match new sidebar width */
+  left: 210px;
   right: 0;
   bottom: 0;
   width: auto;
   min-width: 0;
-  padding: 0 2.5rem 2vw 2.5rem;
+  padding: 0 2vw 2vw 2vw;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -526,80 +506,86 @@ const equityCurveData = computed(() => {
 .dashboard-header {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  margin-top: 1.5rem;
-}
-.dashboard-filters {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  background: #232b3b;
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
-  margin-bottom: 1.2rem;
-  align-items: center;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
-}
-.filter-btn {
-  background: transparent;
-  color: #a3adc2;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1.2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.filter-btn.active, .filter-btn:hover {
-  background: #2b6cb0;
-  color: #fff;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  margin-top: 1.2rem;
 }
 .dashboard-metrics {
   display: flex;
-  gap: 1.2rem;
+  gap: 1.1rem;
   flex-wrap: wrap;
-  background: #232b3b;
+  background: transparent;
   border-radius: 12px;
-  padding: 1rem 2rem;
+  padding: 0;
   align-items: center;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
+  box-shadow: none;
 }
 .metric-card {
-  background: transparent;
-  color: #a3adc2;
-  border-radius: 12px;
-  padding: 0.7rem 1.2rem;
-  font-size: 1rem;
-  font-weight: 600;
+  background: #232b3b;
+  border-radius: 14px;
+  padding: 0.8rem 1.3rem 0.7rem 1.3rem;
+  min-width: 90px;
+  min-height: 70px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 90px;
-  min-height: 60px;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
+  margin-bottom: 0.2rem;
+  border: 2px solid transparent;
+  transition: border 0.2s;
+}
+.metric-card.wins { background: #1e2e1e; border-color: #4be37a33; }
+.metric-card.losses { background: #2e1e1e; border-color: #ff5c5c33; }
+.metric-card.open { background: #1e2e2e; border-color: #4be37a33; }
+.metric-card.wash { background: #2e2e1e; border-color: #ffe06633; }
+.metric-card.avgw { background: #1e2e1e; border-color: #4be37a33; }
+.metric-card.avgl { background: #2e1e1e; border-color: #ff5c5c33; }
+.metric-card.pnl { background: #1e2e1e; border-color: #4be37a33; }
+.metric-label {
+  color: #a3adc2;
+  font-size: 0.93rem;
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+  letter-spacing: 0.5px;
+}
+.metric-value {
+  font-size: 1.7rem;
+  font-weight: 900;
+  margin-top: 0.1rem;
+  color: #fff;
+  letter-spacing: 1px;
+}
+.metric-card.wins .metric-value, .metric-card.open .metric-value, .metric-card.avgw .metric-value, .metric-card.pnl .metric-value { color: #4be37a; }
+.metric-card.losses .metric-value, .metric-card.avgl .metric-value { color: #ff5c5c; }
+.metric-card.wash .metric-value { color: #ffe066; }
+.dashboard-chart-block {
+  background: #232b3b;
+  border-radius: 18px;
+  margin: 1.2rem 0 1.7rem 0;
+  padding: 1.2rem 1.5rem 1.5rem 1.5rem;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.13);
+  min-height: 220px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  box-shadow: none;
+  position: relative;
 }
-.metric-card span {
-  display: block;
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-top: 0.2rem;
+.chart-shadow {
+  box-shadow: 0 8px 32px 0 rgba(79,195,247,0.08), 0 2px 8px 0 rgba(0,0,0,0.10);
 }
-.metric-card.wins span { color: #4be37a; }
-.metric-card.losses span { color: #ff5c5c; }
-.metric-card.open span { color: #4be37a; }
-.metric-card.wash span { color: #ffe066; }
-.metric-card.avgw span { color: #4be37a; }
-.metric-card.avgl span { color: #ff5c5c; }
-.metric-card.pnl span { color: #4be37a; }
+.chart-empty {
+  color: #b0bec5;
+  text-align: center;
+  font-size: 1.1rem;
+  padding: 2rem 0;
+}
 .dashboard-table-container {
   background: #232b3b;
   border-radius: 18px;
   box-shadow: 0 4px 24px 0 rgba(0,0,0,0.12);
   margin: 0;
-  padding: 1.2rem 0.5vw 0.5rem 0.5vw;
+  padding: 0.7rem 0.5vw 0.5rem 0.5vw;
   width: 100%;
   box-sizing: border-box;
 }
@@ -607,23 +593,24 @@ const equityCurveData = computed(() => {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 1rem;
+  font-size: 0.97rem;
   background: #232b3b;
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
 }
 .dashboard-table th, .dashboard-table td {
-  padding: 0.65rem 0.7rem;
+  padding: 0.45rem 0.5rem;
   text-align: center;
 }
 .dashboard-table th {
   background: #232b3b;
   color: #a3adc2;
-  font-weight: 700;
+  font-weight: 800;
   border-bottom: 2px solid #2e3950;
-  font-size: 0.98rem;
-  letter-spacing: 0.02em;
+  font-size: 0.97rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 .dashboard-table tbody tr {
   transition: background 0.2s;
@@ -633,7 +620,7 @@ const equityCurveData = computed(() => {
 }
 .symbol {
   color: #6cb4ff;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
   text-decoration: underline;
@@ -641,68 +628,48 @@ const equityCurveData = computed(() => {
 .status-badge {
   display: inline-block;
   min-width: 60px;
-  padding: 0.25em 0.8em;
-  border-radius: 12px;
-  font-size: 0.95em;
-  font-weight: 600;
+  padding: 0.22em 0.7em;
+  border-radius: 10px;
+  font-size: 0.97em;
+  font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  border: 1.5px solid transparent;
 }
 .status-badge.win {
   background: #1e2e1e;
   color: #4be37a;
-  border: 1px solid #4be37a;
+  border-color: #4be37a;
 }
 .status-badge.loss {
   background: #2e1e1e;
   color: #ff5c5c;
-  border: 1px solid #ff5c5c;
+  border-color: #ff5c5c;
 }
 .status-badge.open {
   background: #232b3b;
   color: #e6eaf3;
-  border: 1px solid #a3adc2;
+  border-color: #a3adc2;
 }
 .status-badge.wash {
   background: #2e2e1e;
   color: #ffe066;
-  border: 1px solid #ffe066;
+  border-color: #ffe066;
 }
 .pos {
   color: #4be37a;
-  font-weight: 600;
+  font-weight: 700;
 }
 .neg {
   color: #ff5c5c;
-  font-weight: 600;
+  font-weight: 700;
 }
-.chart-container {
-  position: relative;
-  height: 400px;
-  margin-top: 1.5rem;
-  margin-bottom: 3rem;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #232b3b;
-  padding: 1rem;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
-}
-.dashboard-chart-block {
-  background: #232b3b;
-  border-radius: 12px;
-  margin: 1.5rem 0 2rem 0;
-  padding: 1.2rem 1.5rem 1.5rem 1.5rem;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
-  min-height: 220px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.chart-empty {
-  color: #b0bec5;
-  text-align: center;
-  font-size: 1.1rem;
-  padding: 2rem 0;
+@media (max-width: 900px) {
+  .dashboard-main { padding: 0 0.5vw 2vw 0.5vw; }
+  .sidebar { width: 54px; padding: 1rem 0.2rem; }
+  .logo, .account-section, .sidebar-footer, .sidebar-actions, .sidebar-nav a span { display: none !important; }
+  .sidebar-nav a, .sidebar-nav .router-link-active { font-size: 1.2rem; justify-content: center; padding: 0.7rem 0; }
+  .dashboard-metrics { flex-wrap: wrap; gap: 0.7rem; padding: 0.5rem 0.5rem; }
+  .metric-card { min-width: 70px; min-height: 50px; padding: 0.5rem 0.7rem; }
 }
 </style>

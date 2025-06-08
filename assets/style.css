@@ -1,0 +1,67 @@
+/* TradeCraft Custom Styles */
+
+/* Main app container */
+.main-container {
+    margin-top: 20px;
+}
+
+/* Card styling */
+.metric-card {
+    text-align: center;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Table styling */
+.trade-table {
+    font-size: 14px;
+}
+
+.trade-table .win-row {
+    background-color: #d4edda !important;
+}
+
+.trade-table .loss-row {
+    background-color: #f8d7da !important;
+}
+
+/* Form styling */
+.trade-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* Chart containers */
+.chart-container {
+    margin-bottom: 30px;
+}
+
+/* Button styling */
+.btn-custom {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+/* Alert styling */
+.custom-alert {
+    margin-bottom: 20px;
+}
+
+/* Navigation styling */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .metric-card {
+        margin-bottom: 15px;
+    }
+    
+    .chart-container {
+        margin-bottom: 20px;
+    }
+}

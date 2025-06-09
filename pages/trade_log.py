@@ -9,6 +9,8 @@ import dash_bootstrap_components as dbc
 from utils import db_access
 import pandas as pd
 from dash.dependencies import ALL
+from dash import ctx
+from datetime import date, timedelta, datetime
 
 # Register this as a Dash page
 dash.register_page(__name__, path="/trade_log", name="Trade Log")
@@ -103,6 +105,32 @@ layout = dbc.Container([
             dbc.Button("Clear Filters", id="clear-filters", color="secondary", outline=True, className="me-2"),
         ], width=2),
     ], className="mb-3"),
+    dbc.Row([
+        dbc.Col([
+            dbc.ButtonGroup([
+                dbc.Button("Today", id="quickfilter-today", color="primary", outline=True, size="sm"),
+                dbc.Button("Yesterday", id="quickfilter-yesterday", color="primary", outline=True, size="sm"),
+                dbc.Button("This Week", id="quickfilter-thisweek", color="primary", outline=True, size="sm"),
+                dbc.Button("Last Week", id="quickfilter-lastweek", color="primary", outline=True, size="sm"),
+                dbc.Button("This Month", id="quickfilter-thismonth", color="primary", outline=True, size="sm"),
+                dbc.Button("Last Month", id="quickfilter-lastmonth", color="primary", outline=True, size="sm"),
+                dbc.Button("All Time", id="quickfilter-alltime", color="primary", outline=True, size="sm"),
+            ], size="sm", className="mb-2"),
+        ], width=12),
+    ], className="mb-2"),
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id="equity-curve-chart", config={"displayModeBar": False}),
+        ], width=8),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("Summary Stats"),
+                dbc.CardBody([
+                    html.Div(id="trade-log-summary-stats")
+                ]),
+            ]),
+        ], width=4),
+    ], className="mb-4"),
     dash_table.DataTable(
         id="trade-table",
         columns=[
@@ -156,6 +184,50 @@ def update_table(symbol, tag, start, end, clear):
         return get_trades_df().to_dict("records")
     return get_trades_df(symbol or "", tag or "", start or "", end or "").to_dict("records")
 
+@callback(
+    Output("date-filter", "start_date"),
+    Output("date-filter", "end_date"),
+    [
+        Input("quickfilter-today", "n_clicks"),
+        Input("quickfilter-yesterday", "n_clicks"),
+        Input("quickfilter-thisweek", "n_clicks"),
+        Input("quickfilter-lastweek", "n_clicks"),
+        Input("quickfilter-thismonth", "n_clicks"),
+        Input("quickfilter-lastmonth", "n_clicks"),
+        Input("quickfilter-alltime", "n_clicks"),
+    ],
+    prevent_initial_call=True
+)
+def set_quick_date_filter(
+    today, yesterday, thisweek, lastweek, thismonth, lastmonth, alltime
+):
+    triggered = ctx.triggered_id
+    today_dt = date.today()
+    if triggered == "quickfilter-today":
+        return today_dt.isoformat(), today_dt.isoformat()
+    elif triggered == "quickfilter-yesterday":
+        yest = today_dt - timedelta(days=1)
+        return yest.isoformat(), yest.isoformat()
+    elif triggered == "quickfilter-thisweek":
+        start = today_dt - timedelta(days=today_dt.weekday())
+        return start.isoformat(), today_dt.isoformat()
+    elif triggered == "quickfilter-lastweek":
+        start = today_dt - timedelta(days=today_dt.weekday() + 7)
+        end = start + timedelta(days=6)
+        return start.isoformat(), end.isoformat()
+    elif triggered == "quickfilter-thismonth":
+        start = today_dt.replace(day=1)
+        return start.isoformat(), today_dt.isoformat()
+    elif triggered == "quickfilter-lastmonth":
+        first_this_month = today_dt.replace(day=1)
+        last_month_end = first_this_month - timedelta(days=1)
+        start = last_month_end.replace(day=1)
+        end = last_month_end
+        return start.isoformat(), end.isoformat()
+    elif triggered == "quickfilter-alltime":
+        return None, None
+    return dash.no_update, dash.no_update
+
 # Navigation callback: when a row is selected, navigate to detail page
 @callback(
     Output("trade-log-navigate", "href"),
@@ -168,3 +240,82 @@ def go_to_trade_detail(selected_rows, data):
         trade_id = data[selected_rows[0]]["id"]
         return f"/trade_detail/{trade_id}"
     return dash.no_update
+
+@callback(
+    [Output("equity-curve-chart", "figure"), Output("trade-log-summary-stats", "children")],
+    [
+        Input("trade-table", "data"),
+        State("date-filter", "start_date"),
+        State("date-filter", "end_date"),
+    ],
+)
+def update_equity_and_stats(table_data: list[dict], start_date: str, end_date: str) -> tuple:
+    """Update the equity curve chart and summary stats based on filtered trades.
+    For 'today' and 'yesterday', group by hour; otherwise, group by day.
+    """
+    import plotly.graph_objs as go
+    import pandas as pd
+    if not table_data or len(table_data) == 0:
+        fig = go.Figure()
+        fig.update_layout(height=250, margin=dict(l=0, r=0, t=30, b=0), template="plotly_white")
+        stats = [html.Div("No trades to summarize.")]
+        return fig, stats
+    df = pd.DataFrame(table_data)
+    df = df.sort_values("date")
+    # Determine grouping granularity
+    group_by = "date"  # default: group by day
+    if start_date and end_date:
+        try:
+            start = pd.to_datetime(start_date)
+            end = pd.to_datetime(end_date)
+            if (end - start).days <= 1:
+                # For today or yesterday, group by hour
+                group_by = "hour"
+        except Exception:
+            group_by = "date"
+    # Equity curve logic
+    if group_by == "hour":
+        # If possible, use a datetime column for hour grouping
+        if "opened_at" in df.columns:
+            df["opened_at_dt"] = pd.to_datetime(df["opened_at"], errors="coerce")
+        else:
+            # Fallback: try to get from index or skip
+            df["opened_at_dt"] = pd.to_datetime(df["date"], errors="coerce")
+        df["hour"] = df["opened_at_dt"].dt.strftime("%Y-%m-%d %H:00")
+        df_grouped = df.groupby("hour", as_index=False)["return_dollar"].sum()
+        df_grouped = df_grouped.sort_values("hour")
+        df_grouped["cum_pnl"] = df_grouped["return_dollar"].fillna(0).cumsum()
+        x = df_grouped["hour"]
+        y = df_grouped["cum_pnl"]
+    else:
+        # Group by date, sum return_dollar per day
+        df_grouped = df.groupby("date", as_index=False)["return_dollar"].sum()
+        df_grouped = df_grouped.sort_values("date")
+        df_grouped["cum_pnl"] = df_grouped["return_dollar"].fillna(0).cumsum()
+        x = df_grouped["date"]
+        y = df_grouped["cum_pnl"]
+    fig = go.Figure(go.Scatter(x=x, y=y, mode="lines+markers", name="Equity Curve"))
+    fig.update_layout(
+        title="Equity Curve",
+        xaxis_title="Date/Hour" if group_by == "hour" else "Date",
+        yaxis_title="Cumulative P&L ($)",
+        height=250,
+        margin=dict(l=0, r=0, t=30, b=0),
+        template="plotly_white"
+    )
+    # Stats (unchanged)
+    wins = df[(df["status"] == "Win") & df["return_dollar"].notnull()]
+    losses = df[(df["status"] == "Loss") & df["return_dollar"].notnull()]
+    open_trades = df[df["status"] == "Open"]
+    avg_win = wins["return_dollar"].mean() if not wins.empty else 0.0
+    avg_loss = losses["return_dollar"].mean() if not losses.empty else 0.0
+    total_pnl = df["return_dollar"].sum(skipna=True)
+    stats = dbc.ListGroup([
+        dbc.ListGroupItem([html.B("Wins: "), f"{len(wins)}"]),
+        dbc.ListGroupItem([html.B("Losses: "), f"{len(losses)}"]),
+        dbc.ListGroupItem([html.B("Open: "), f"{len(open_trades)}"]),
+        dbc.ListGroupItem([html.B("Avg Win: "), f"${avg_win:.2f}"]),
+        dbc.ListGroupItem([html.B("Avg Loss: "), f"${avg_loss:.2f}"]),
+        dbc.ListGroupItem([html.B("Total P&L: "), f"${total_pnl:.2f}"]),
+    ])
+    return fig, stats

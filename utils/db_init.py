@@ -130,17 +130,34 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
             legs.append((trade_id, "buy to open", add_qty, add_price, add_fees, opened_at + timedelta(minutes=60), "Add to position"))
             qty += add_qty
         # Partial sell (only for closed trades)
+        hold_days_partial = None
         if not leave_open and random.random() > 0.3:
             sell_qty = random.randint(1, qty-1)
-            sell_price = round(price + random.uniform(1, 10), 2)
+            # --- Loss or win: alternate by even/odd index ---
+            if i % 2 == 0:
+                sell_price = round(price - random.uniform(10, 30), 2)  # Loss, make sure it's a real loss
+            else:
+                sell_price = round(price + random.uniform(10, 30), 2)  # Win
             sell_fees = round(random.uniform(0.1, 2.5), 2)
-            legs.append((trade_id, "sell to close", sell_qty, sell_price, sell_fees, opened_at + timedelta(days=1, minutes=15), "Partial exit"))
+            # --- Variable hold time: 1-5 days ---
+            hold_days_partial = random.randint(1, 5)
+            legs.append((trade_id, "sell to close", sell_qty, sell_price, sell_fees, opened_at + timedelta(days=hold_days_partial, minutes=15), "Partial exit"))
             qty -= sell_qty
         # Final sell (only for closed trades)
         if not leave_open:
-            sell_price = round(price + random.uniform(2, 15), 2)
+            # --- Loss or win: alternate by even/odd index ---
+            if i % 2 == 0:
+                sell_price = round(price - random.uniform(10, 30), 2)  # Loss, make sure it's a real loss
+            else:
+                sell_price = round(price + random.uniform(10, 30), 2)  # Win
             sell_fees = round(random.uniform(0.1, 2.5), 2)
-            legs.append((trade_id, "sell to close", qty, sell_price, sell_fees, opened_at + timedelta(days=2, minutes=30), "Final exit"))
+            # --- Variable hold time: 2-10 days, always after any partial sell ---
+            if hold_days_partial is not None:
+                hold_days_final = hold_days_partial + random.randint(1, 5)
+            else:
+                hold_days_final = random.randint(2, 10)
+            legs.append((trade_id, "sell to close", qty, sell_price, sell_fees, opened_at + timedelta(days=hold_days_final, minutes=30), "Final exit"))
+        # Insert legs
         for leg in legs:
             now_iso = datetime.now().isoformat()
             cur.execute(
@@ -150,13 +167,13 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def initialize_database() -> None:
-    """Create schema and insert sample data."""
-    with get_connection() as conn:
-        create_schema(conn)
-        insert_sample_data(conn)
+def initialize_database(db_path: Path = DB_PATH) -> None:
+    """Initialize the database: create schema and insert sample data."""
+    conn = get_connection(db_path)
+    create_schema(conn)
+    insert_sample_data(conn)
+    conn.close()
 
 
 if __name__ == "__main__":
     initialize_database()
-    print("Database initialized and sample data inserted.")

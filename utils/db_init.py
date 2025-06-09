@@ -106,9 +106,12 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
         notes = f"Sample trade for {asset_symbol} on {trade_date}"
         tags = random.choice(["momentum,largecap", "swing,tech", "daytrade,crypto", "options,volatility", "trend,forex"])
         now_iso = datetime.now().isoformat()
+        # --- 20% of trades will be left open (no closing legs) ---
+        leave_open = (i % 5 == 0)  # every 5th trade is open
+        closed_at = None
         cur.execute(
             "INSERT INTO trades (user_id, asset_symbol, asset_type, opened_at, closed_at, notes, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (user_id, asset_symbol, asset_type, opened_at.isoformat(), None, notes, tags, now_iso, now_iso)
+            (user_id, asset_symbol, asset_type, opened_at.isoformat(), closed_at, notes, tags, now_iso, now_iso)
         )
         trade_id = cur.lastrowid
         trade_id_map[i] = trade_id
@@ -126,17 +129,18 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
             add_fees = round(random.uniform(0.1, 2.5), 2)
             legs.append((trade_id, "buy to open", add_qty, add_price, add_fees, opened_at + timedelta(minutes=60), "Add to position"))
             qty += add_qty
-        # Partial sell
-        if random.random() > 0.3:
+        # Partial sell (only for closed trades)
+        if not leave_open and random.random() > 0.3:
             sell_qty = random.randint(1, qty-1)
             sell_price = round(price + random.uniform(1, 10), 2)
             sell_fees = round(random.uniform(0.1, 2.5), 2)
             legs.append((trade_id, "sell to close", sell_qty, sell_price, sell_fees, opened_at + timedelta(days=1, minutes=15), "Partial exit"))
             qty -= sell_qty
-        # Final sell
-        sell_price = round(price + random.uniform(2, 15), 2)
-        sell_fees = round(random.uniform(0.1, 2.5), 2)
-        legs.append((trade_id, "sell to close", qty, sell_price, sell_fees, opened_at + timedelta(days=2, minutes=30), "Final exit"))
+        # Final sell (only for closed trades)
+        if not leave_open:
+            sell_price = round(price + random.uniform(2, 15), 2)
+            sell_fees = round(random.uniform(0.1, 2.5), 2)
+            legs.append((trade_id, "sell to close", qty, sell_price, sell_fees, opened_at + timedelta(days=2, minutes=30), "Final exit"))
         for leg in legs:
             now_iso = datetime.now().isoformat()
             cur.execute(

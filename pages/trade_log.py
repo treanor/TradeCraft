@@ -37,8 +37,8 @@ def get_trades_df(user_id: int, account_id: int, symbol: str = "", tag: str = ""
             if analytics["status"] == "closed":
                 exit_leg = max([l for l in legs if l["action"] in ("sell", "sell to close")], key=lambda l: l["executed_at"], default=None)
         # Hold time
-        opened_at = pd.to_datetime(row["opened_at"])
-        closed_at = pd.to_datetime(exit_leg["executed_at"]) if exit_leg else None
+        opened_at = pd.to_datetime(row["opened_at"], utc=True, errors="coerce")
+        closed_at = pd.to_datetime(exit_leg["executed_at"], utc=True, errors="coerce") if exit_leg else None
         hold_time = (closed_at - opened_at) if closed_at is not None else None
         # Return $ and %
         entry_total = entry_leg["quantity"] * entry_leg["price"] if entry_leg else None

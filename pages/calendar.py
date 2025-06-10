@@ -10,6 +10,7 @@ from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 from utils.db_access import fetch_trades_for_user
 from components.filters import user_account_dropdowns
+import utils.db_access as db_access
 
 # Register page
 dash.register_page(__name__, path="/calendar", name="Calendar")
@@ -26,15 +27,15 @@ def get_trades_by_day(year: int, month: int, user_id: int, account_id: int) -> p
     df = df[df["opened_at"].dt.month == month]
     df["date"] = df["opened_at"].dt.date
     # --- Add realized_pnl column for calendar aggregation ---
-    import utils.db_access as db_access
     analytics = [db_access.trade_analytics(row["id"]) for _, row in df.iterrows()]
     df["realized_pnl"] = [a["realized_pnl"] for a in analytics]
     return df
 
-def calendar_layout(year: int, month: int) -> html.Div:
-    cal = calendar.Calendar(firstweekday=6)  # Start weeks on Sunday
+def calendar_layout(year: int, month: int, user_id: int, account_id: int) -> html.Div:
+    # Generate all days to display in the calendar grid (including leading/trailing days for full weeks)
+    cal = calendar.Calendar()
     month_days = list(cal.itermonthdates(year, month))
-    df = get_trades_by_day(year, month)
+    df = get_trades_by_day(year, month, user_id, account_id)
     # Group by day
     day_stats = df.groupby("date").agg(
         pnl=("realized_pnl", "sum"),
@@ -118,8 +119,7 @@ layout = dbc.Container([
      Input("account-dropdown", "value")],
 )
 def update_calendar(year, month, user_id, account_id):
-    df = get_trades_by_day(year, month, user_id, account_id)
-    return calendar_layout(df, year, month)
+    return calendar_layout(year, month, user_id, account_id)
 
 @callback(
     Output("cal-year", "data", allow_duplicate=True),

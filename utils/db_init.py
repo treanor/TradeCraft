@@ -164,6 +164,18 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
                 "INSERT INTO trade_legs (trade_id, action, quantity, price, fees, executed_at, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (leg[0], leg[1], leg[2], leg[3], leg[4], leg[5].isoformat(), leg[6], now_iso, now_iso)
             )
+        # Set closed_at for closed trades
+        if not leave_open:
+            cur.execute(
+                "SELECT MAX(executed_at) FROM trade_legs WHERE trade_id = ? AND action IN ('sell', 'sell to close')",
+                (trade_id,)
+            )
+            last_close = cur.fetchone()[0]
+            if last_close:
+                cur.execute(
+                    "UPDATE trades SET closed_at = ? WHERE id = ?",
+                    (last_close, trade_id)
+                )
     conn.commit()
 
 

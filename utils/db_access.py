@@ -136,6 +136,33 @@ def insert_trade_leg(trade_id: int, action: str, quantity: int, price: float, fe
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (trade_id, action, quantity, price, fees, executed_at, notes, now, now))
         conn.commit()
+        # --- Set closed_at if trade is now closed ---
+        # Check if trade is now closed
+        cur.execute('''
+            SELECT action, SUM(quantity) as qty FROM trade_legs
+            WHERE trade_id = ?
+            GROUP BY action
+        ''', (trade_id,))
+        qty = 0
+        for row in cur.fetchall():
+            act, q = row
+            if act in ("buy", "buy to open"):
+                qty += q
+            elif act in ("sell", "sell to close"):
+                qty -= q
+        if qty == 0:
+            # Trade is closed, set closed_at if not already set
+            cur.execute('SELECT closed_at FROM trades WHERE id = ?', (trade_id,))
+            closed_at_val = cur.fetchone()
+            if closed_at_val and closed_at_val[0] is None:
+                # Find latest executed_at of any closing leg
+                cur.execute('''
+                    SELECT MAX(executed_at) FROM trade_legs WHERE trade_id = ? AND action IN ("sell", "sell to close")
+                ''', (trade_id,))
+                last_close = cur.fetchone()[0]
+                if last_close:
+                    cur.execute('UPDATE trades SET closed_at = ? WHERE id = ?', (last_close, trade_id))
+                    conn.commit()
         return cur.lastrowid
 
 

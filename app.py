@@ -25,6 +25,7 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(dcc.Link("Trade Log", href="/trade_log", className="nav-link")),
         dbc.NavItem(dcc.Link("Analytics", href="/analytics", className="nav-link")),
         dbc.NavItem(dcc.Link("Calendar", href="/calendar", className="nav-link")),
+        dbc.NavItem(dcc.Link("Settings", href="/settings", className="nav-link")),
     ],
     brand="Trade Craft",
     brand_href="/",

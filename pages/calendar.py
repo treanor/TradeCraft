@@ -106,6 +106,8 @@ layout = dbc.Container([
         dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
         dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
     ], className="align-items-center mb-4 g-0"),
+    dcc.Store(id="user-store", storage_type="local"),
+    dcc.Store(id="account-store", storage_type="local"),
     dcc.Store(id="cal-year", data=date.today().year),
     dcc.Store(id="cal-month", data=date.today().month),
     html.Div(id="calendar-content")
@@ -115,7 +117,7 @@ layout = dbc.Container([
     Output("calendar-content", "children"),
     [Input("cal-year", "data"),
      Input("cal-month", "data"),
-     Input("user-dropdown", "value"),
+     Input("user-store", "data"),
      Input("account-dropdown", "value")],
 )
 def update_calendar(year, month, user_id, account_id):

@@ -2,7 +2,7 @@
 Reusable filter/header bar for Trade Log and Analytics pages.
 Includes symbol filter, tag filter, date picker, clear button, and quick filter buttons.
 """
-from dash import dcc, html, callback, Output, Input
+from dash import dcc, html, callback, Output, Input, State, ctx
 import dash_bootstrap_components as dbc
 from typing import List, Optional
 from utils import db_access
@@ -126,22 +126,15 @@ def filter_header(
         ], className="mb-2"),
     ])
 
+def get_persistent_account() -> int | None:
+    """Get the last selected account from dcc.Store (localStorage) if available."""
+    store = ctx.states.get("account-store.data")
+    return store if store else None
+
 def user_account_dropdowns() -> html.Div:
-    """Return a row with user and account dropdowns for the header."""
-    # Get users and accounts from the DB
-    users = db_access.get_all_users()  # returns list of dicts: [{id, username}]
-    user_options = [{"label": u["username"], "value": u["id"]} for u in users]
-    # Accounts will be dynamically filtered by user selection in the callback
+    """Return a row with only account dropdown for the header (user selection is now in settings)."""
     return dbc.Row([
-        dbc.Col([
-            dcc.Dropdown(
-                id="user-dropdown",
-                options=user_options,
-                value=users[0]["id"] if users else None,
-                clearable=False,
-                style={"minWidth": 120, "marginRight": 8},
-            )
-        ], width="auto"),
+        dcc.Store(id="user-store", storage_type="local"),
         dbc.Col([
             dcc.Dropdown(
                 id="account-dropdown",
@@ -152,16 +145,29 @@ def user_account_dropdowns() -> html.Div:
                 placeholder="Select Account"
             )
         ], width="auto"),
+        dcc.Store(id="account-store", storage_type="local"),
     ], className="g-1 align-items-center", style={"marginLeft": 16})
 
 @callback(
     Output("account-dropdown", "options"),
     Output("account-dropdown", "value"),
-    Input("user-dropdown", "value"),
+    Output("account-store", "data"),
+    Input("user-store", "data"),
+    Input("account-dropdown", "value"),
+    State("account-store", "data"),
 )
-def update_account_dropdown(user_id: int):
-    """Update account dropdown options and value when user changes."""
-    accounts = db_access.get_accounts_for_user(user_id)
+def update_account_dropdown(user_id: int, account_id: int, store_account: int):
+    """Update account dropdown options and value when user or account changes. Persist selection. Defaults to alice_acct1 if no selection."""
+    accounts = db_access.get_accounts_for_user(user_id) if user_id else []
     options = [{"label": f"{a['name']} ({a['broker']})" if a['broker'] else a['name'], "value": a["id"]} for a in accounts]
-    value = options[0]["value"] if options else None
-    return options, value
+    # Default to alice_acct1 if nothing is selected
+    default_value = None
+    if options:
+        for a in accounts:
+            if a["name"] == "alice_acct1":
+                default_value = a["id"]
+                break
+        if not default_value:
+            default_value = options[0]["value"]
+    value = account_id or store_account or default_value
+    return options, value, value

@@ -294,7 +294,7 @@ def clear_analytics_filters(n_clicks: int):
         Input("analytics-tag-filter", "value"),
         Input("analytics-symbol-filter", "value"),
         Input("analytics-clear-filters", "n_clicks"),
-        Input("user-dropdown", "value"),
+        Input("user-store", "data"),
         Input("account-dropdown", "value"),
     ]
 )

@@ -211,7 +211,7 @@ layout = dbc.Container([
         Input("date-filter", "start_date"),
         Input("date-filter", "end_date"),
         Input("clear-filters", "n_clicks"),
-        Input("user-dropdown", "value"),
+        Input("user-store", "data"),
         Input("account-dropdown", "value"),
     ],
     prevent_initial_call=True

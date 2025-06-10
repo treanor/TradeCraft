@@ -601,3 +601,14 @@ def add_leg(n_clicks: int, legs: list | None) -> list:
         "fee": 0.0,
     })
     return legs
+
+@callback(
+    Output("symbol-filter", "value", allow_duplicate=True),
+    Output("tag-filter", "value", allow_duplicate=True),
+    Output("date-filter", "start_date", allow_duplicate=True),
+    Output("date-filter", "end_date", allow_duplicate=True),
+    Input("clear-filters", "n_clicks"),
+    prevent_initial_call=True
+)
+def clear_trade_log_filters(n_clicks):
+    return None, None, None, None

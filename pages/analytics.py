@@ -248,6 +248,19 @@ def set_analytics_quick_date_filter(today, yesterday, thisweek, lastweek, thismo
         return None, None
     return dash.no_update, dash.no_update
 
+# Add a callback to reset all filter inputs when 'Clear Filters' is clicked
+@callback(
+    Output("analytics-symbol-filter", "value", allow_duplicate=True),
+    Output("analytics-tag-filter", "value", allow_duplicate=True),
+    Output("analytics-date-filter", "start_date", allow_duplicate=True),
+    Output("analytics-date-filter", "end_date", allow_duplicate=True),
+    Input("analytics-clear-filters", "n_clicks"),
+    prevent_initial_call=True
+)
+def clear_analytics_filters(n_clicks: int):
+    """Reset all analytics filter inputs when Clear Filters is clicked."""
+    return None, None, None, None
+
 # Main dashboard callback (update to use text input values for symbol/tag)
 @callback(
     [

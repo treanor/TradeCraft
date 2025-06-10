@@ -32,6 +32,9 @@ def get_analytics_df() -> pd.DataFrame:
     # Robust datetime parsing for ISO8601 and mixed formats
     df["opened_at"] = pd.to_datetime(df["opened_at"], format="mixed", errors="coerce")
     df["asset_type"] = df["asset_type"].fillna("")
+    # --- Add normalized 'symbol' column for filtering ---
+    from utils import db_access as _db_access
+    df["symbol"] = [", ".join(_db_access.get_symbols_for_trade(row["id"])) for _, row in df.iterrows()]
     return df
 
 def summary_stats(df: pd.DataFrame) -> list:

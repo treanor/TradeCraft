@@ -11,6 +11,7 @@ import pandas as pd
 from dash.dependencies import ALL
 from dash import ctx
 from datetime import date, timedelta, datetime
+from components.filters import filter_header  # Import the reusable filter_header component
 
 # Register this as a Dash page
 dash.register_page(__name__, path="/trade_log", name="Trade Log")
@@ -90,41 +91,8 @@ def get_trades_df(symbol: str = "", tag: str = "", start: str = "", end: str = "
 
 layout = dbc.Container([
     html.H2("Trade Log"),
-    dbc.Row([
-        dbc.Col([
-            dbc.Input(id="symbol-filter", placeholder="Filter by symbol", type="text", debounce=True),
-        ], width=3),
-        dbc.Col([
-            dbc.Input(id="tag-filter", placeholder="Filter by tag", type="text", debounce=True),
-        ], width=3),
-        dbc.Col([
-            dcc.DatePickerRange(
-                id="date-filter",
-                start_date_placeholder_text="Start Date",
-                end_date_placeholder_text="End Date",
-                display_format="YYYY-MM-DD"
-            ),
-        ], width=4),
-        dbc.Col([
-            dbc.Button("Clear Filters", id="clear-filters", color="secondary", outline=True, className="me-2"),
-        ], width=2),
-    ], className="mb-3"),
-    dbc.Row([
-        dbc.Col([
-            dbc.ButtonGroup([
-                dbc.Button("Today", id="quickfilter-today", color="primary", outline=True, size="sm"),
-                dbc.Button("Yesterday", id="quickfilter-yesterday", color="primary", outline=True, size="sm"),
-                dbc.Button("This Week", id="quickfilter-thisweek", color="primary", outline=True, size="sm"),
-                dbc.Button("Last Week", id="quickfilter-lastweek", color="primary", outline=True, size="sm"),
-                dbc.Button("This Month", id="quickfilter-thismonth", color="primary", outline=True, size="sm"),
-                dbc.Button("Last Month", id="quickfilter-lastmonth", color="primary", outline=True, size="sm"),
-                dbc.Button("All Time", id="quickfilter-alltime", color="primary", outline=True, size="sm"),
-            ], size="sm", className="mb-2"),
-        ], width=10),
-        dbc.Col([
-            dbc.Button("Add Trade", id="add-trade-btn", color="success", outline=False, className="mb-2", n_clicks=0),
-        ], width=2, className="d-flex align-items-end justify-content-end"),
-    ], className="mb-2"),
+    html.Div(filter_header(prefix="", show_add_trade=True), className="mb-2"),  # Use the reusable filter_header component
+    # Remove any dbc.Row or code that creates a second set of quick filter buttons (Today, Yesterday, This Week, etc.) from the Trade Log layout. Only the filter_header should provide these buttons now.
     # Add modal for manual trade entry (cleaned up, no target/stop-loss, improved spacing, date picker for legs)
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("Add New Trade")),

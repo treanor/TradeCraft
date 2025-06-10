@@ -5,6 +5,7 @@ Includes symbol filter, tag filter, date picker, clear button, and quick filter 
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from typing import List, Optional
+from utils import db_access
 
 def filter_bar(
     tag_options: List[str],
@@ -68,13 +69,32 @@ def filter_header(
     Returns a filter/header bar Div with symbol filter, tag filter, date picker, clear button, quick filter buttons, and optional Add Trade button.
     prefix: Optional string to prefix component IDs for uniqueness per page.
     """
+    # Fetch options from DB for dropdowns
+    symbol_options = db_access.get_all_symbols()
+    tag_options = db_access.get_all_tags()
     return html.Div([
         dbc.Row([
             dbc.Col([
-                dbc.Input(id=f"{prefix}symbol-filter", placeholder=symbol_placeholder, type="text", debounce=True),
+                dcc.Dropdown(
+                    id=f"{prefix}symbol-filter",
+                    options=[{"label": s, "value": s} for s in symbol_options],
+                    placeholder=symbol_placeholder,
+                    multi=False,
+                    searchable=True,
+                    clearable=True,
+                    style={"width": "100%"},
+                ),
             ], width=3),
             dbc.Col([
-                dbc.Input(id=f"{prefix}tag-filter", placeholder=tag_placeholder, type="text", debounce=True),
+                dcc.Dropdown(
+                    id=f"{prefix}tag-filter",
+                    options=[{"label": t, "value": t} for t in tag_options],
+                    placeholder=tag_placeholder,
+                    multi=False,
+                    searchable=True,
+                    clearable=True,
+                    style={"width": "100%"},
+                ),
             ], width=3),
             dbc.Col([
                 dcc.DatePickerRange(

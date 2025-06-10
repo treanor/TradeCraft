@@ -88,13 +88,22 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
     ]
     # Generate 3 months of weekdays
     today = datetime.now().date()
+    # Always treat recent week as Mon-Fri, regardless of today
+    # Find the most recent Friday
+    days_since_friday = (today.weekday() - 4) % 7
+    recent_friday = today - timedelta(days=days_since_friday)
+    recent_weekdays = [recent_friday - timedelta(days=4-i) for i in range(5)]  # Mon-Fri
+    # Build trade_days for all previous weekdays except the most recent week
     start_date = today - timedelta(days=90)
     trade_days = []
     d = start_date
     while d <= today:
-        if d.weekday() < 5:  # Weekday
+        if d.weekday() < 5 and d not in recent_weekdays:
             trade_days.append(d)
         d += timedelta(days=1)
+    # Add exactly one trade for each weekday in the most recent week (Mon-Fri)
+    trade_days += recent_weekdays
+    trade_days = sorted(set(trade_days))
     # Insert trades and legs
     random.seed(42)
     trade_id_map = {}
@@ -121,13 +130,19 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
         price = round(random.uniform(10, 500), 2)
         fees = round(random.uniform(0.1, 2.5), 2)
         # Buy to open
-        legs.append((trade_id, "buy to open", qty, price, fees, opened_at + timedelta(minutes=5), "Open position"))
+        leg_time = opened_at + timedelta(minutes=5)
+        if leg_time > datetime.now().replace(hour=16, minute=0, second=0, microsecond=0):
+            leg_time = datetime.now().replace(hour=16, minute=0, second=0, microsecond=0)
+        legs.append((trade_id, "buy to open", qty, price, fees, leg_time, "Open position"))
         # Optionally add to position
         if random.random() > 0.5:
             add_qty = random.choice([10, 20, 50])
             add_price = round(price + random.uniform(-2, 2), 2)
             add_fees = round(random.uniform(0.1, 2.5), 2)
-            legs.append((trade_id, "buy to open", add_qty, add_price, add_fees, opened_at + timedelta(minutes=60), "Add to position"))
+            add_time = opened_at + timedelta(minutes=60)
+            if add_time > datetime.now().replace(hour=16, minute=0, second=0, microsecond=0):
+                add_time = datetime.now().replace(hour=16, minute=0, second=0, microsecond=0)
+            legs.append((trade_id, "buy to open", add_qty, add_price, add_fees, add_time, "Add to position"))
             qty += add_qty
         # Partial sell (only for closed trades)
         hold_days_partial = None
@@ -141,7 +156,10 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
             sell_fees = round(random.uniform(0.1, 2.5), 2)
             # --- Variable hold time: 1-5 days ---
             hold_days_partial = random.randint(1, 5)
-            legs.append((trade_id, "sell to close", sell_qty, sell_price, sell_fees, opened_at + timedelta(days=hold_days_partial, minutes=15), "Partial exit"))
+            sell_time = opened_at + timedelta(days=hold_days_partial, minutes=15)
+            if sell_time > datetime.now().replace(hour=16, minute=0, second=0, microsecond=0):
+                sell_time = datetime.now().replace(hour=16, minute=0, second=0, microsecond=0)
+            legs.append((trade_id, "sell to close", sell_qty, sell_price, sell_fees, sell_time, "Partial exit"))
             qty -= sell_qty
         # Final sell (only for closed trades)
         if not leave_open:
@@ -156,7 +174,10 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
                 hold_days_final = hold_days_partial + random.randint(1, 5)
             else:
                 hold_days_final = random.randint(2, 10)
-            legs.append((trade_id, "sell to close", qty, sell_price, sell_fees, opened_at + timedelta(days=hold_days_final, minutes=30), "Final exit"))
+            final_time = opened_at + timedelta(days=hold_days_final, minutes=30)
+            if final_time > datetime.now().replace(hour=16, minute=0, second=0, microsecond=0):
+                final_time = datetime.now().replace(hour=16, minute=0, second=0, microsecond=0)
+            legs.append((trade_id, "sell to close", qty, sell_price, sell_fees, final_time, "Final exit"))
         # Insert legs
         for leg in legs:
             now_iso = datetime.now().isoformat()

@@ -36,9 +36,22 @@ navbar = dbc.NavbarSimple(
 
 # App layout with navigation and page container
 app.layout = dbc.Container([
+    dcc.Location(id="url-redirector", refresh=True),
     navbar,
     dash.page_container
 ], fluid=True)
+
+# Redirect from / to /trade_log
+from dash.dependencies import Input, Output
+@app.callback(
+    Output("url-redirector", "pathname"),
+    Input("url-redirector", "pathname"),
+    prevent_initial_call=True
+)
+def redirect_root(pathname):
+    if pathname == "/":
+        return "/trade_log"
+    return dash.no_update
 
 if __name__ == "__main__":
     app.run_server(debug=True)

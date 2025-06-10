@@ -43,6 +43,19 @@ def fetch_trades_for_user(username: str, db_path: Path = DB_PATH) -> List[Dict[s
         return [dict(row) for row in cur.fetchall()]
 
 
+def fetch_trades_for_user_and_account(user_id: int, account_id: int, db_path: Path = DB_PATH) -> list[dict]:
+    """Fetch all trades for a given user_id and account_id."""
+    with get_connection(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT * FROM trades
+            WHERE user_id = ? AND account_id = ?
+            ORDER BY opened_at DESC
+        ''', (user_id, account_id))
+        return [dict(row) for row in cur.fetchall()]
+
+
 def fetch_legs_for_trade(trade_id: int, db_path: Path = DB_PATH) -> List[Dict[str, Any]]:
     """
     Fetch all trade legs for a given trade ID.
@@ -306,3 +319,19 @@ def set_symbols_for_trade(trade_id: int, symbols: list[str], db_path: Path = DB_
                 symbol_id = cur.lastrowid
             cur.execute('INSERT OR IGNORE INTO trade_symbols (trade_id, symbol_id) VALUES (?, ?)', (trade_id, symbol_id))
         conn.commit()
+
+
+def get_all_users(db_path: Path = DB_PATH) -> list[dict]:
+    """Return all users as a list of dicts with id and username."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT id, username FROM users ORDER BY username')
+        return [{"id": row[0], "username": row[1]} for row in cur.fetchall()]
+
+
+def get_accounts_for_user(user_id: int, db_path: Path = DB_PATH) -> list[dict]:
+    """Return all accounts for a user as a list of dicts with id, name, broker."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT id, name, broker FROM accounts WHERE user_id = ? ORDER BY name', (user_id,))
+        return [{"id": row[0], "name": row[1], "broker": row[2]} for row in cur.fetchall()]

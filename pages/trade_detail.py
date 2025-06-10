@@ -7,6 +7,7 @@ from dash import html, dcc, dash_table, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 from utils import db_access
 import pandas as pd
+from components.filters import user_account_dropdowns
 
 # Register this as a Dash page
 # URL: /trade_detail/<trade_id>
@@ -14,9 +15,8 @@ dash.register_page(__name__, path_template="/trade_detail/<trade_id>", name="Tra
 
 USERNAME = "alice"  # For now, single-user mode
 
-def get_trade_detail(trade_id: int):
-    # Fetch trade, legs, and analytics
-    trades = db_access.fetch_trades_for_user(USERNAME)
+def get_trade_detail(trade_id: int, user_id: int, account_id: int):
+    trades = db_access.fetch_trades_for_user_and_account(user_id, account_id)
     trade = next((t for t in trades if t["id"] == trade_id), None)
     if not trade:
         return None, None, None
@@ -25,23 +25,27 @@ def get_trade_detail(trade_id: int):
     return trade, legs, analytics
 
 layout = dbc.Container([
-    html.H2("Trade Detail"),
+    dbc.Row([
+        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
+        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
+    ], className="align-items-center mb-4 g-0"),
     dcc.Location(id="trade-detail-url"),
     html.Div(id="trade-detail-content"),
 ], fluid=True)
 
 @callback(
     Output("trade-detail-content", "children"),
-    Input("trade-detail-url", "pathname"),
+    [Input("trade-detail-url", "pathname"),
+     Input("user-dropdown", "value"),
+     Input("account-dropdown", "value")],
 )
-def render_trade_detail(pathname):
-    # Extract trade_id from URL
+def render_trade_detail(pathname, user_id, account_id):
     import re
     m = re.match(r"/trade_detail/(\d+)", pathname or "")
     if not m:
         return dbc.Alert("Invalid trade ID in URL.", color="danger")
     trade_id = int(m.group(1))
-    trade, legs, analytics = get_trade_detail(trade_id)
+    trade, legs, analytics = get_trade_detail(trade_id, user_id, account_id)
     if not trade:
         return dbc.Alert("Trade not found.", color="warning")
     # Trade summary

@@ -11,16 +11,16 @@ import pandas as pd
 from dash.dependencies import ALL
 from dash import ctx
 from datetime import date, timedelta, datetime
-from components.filters import filter_header  # Import the reusable filter_header component
+from components.filters import filter_header, user_account_dropdowns  # Import the reusable filter_header and user_account_dropdowns components
 
 # Register this as a Dash page
 dash.register_page(__name__, path="/trade_log", name="Trade Log")
 
 USERNAME = "alice"  # For now, single-user mode
 
-def get_trades_df(symbol: str = "", tag: str = "", start: str = "", end: str = "") -> pd.DataFrame:
-    """Fetch and filter trades for the user as a DataFrame, with analytics columns for summary table and icons for notes/tags."""
-    trades = db_access.fetch_trades_for_user(USERNAME)
+def get_trades_df(user_id: int, account_id: int, symbol: str = "", tag: str = "", start: str = "", end: str = "") -> pd.DataFrame:
+    """Fetch and filter trades for the user/account as a DataFrame, with analytics columns for summary table and icons for notes/tags."""
+    trades = db_access.fetch_trades_for_user_and_account(user_id, account_id)
     df = pd.DataFrame(trades)
     if df.empty:
         return df
@@ -90,7 +90,10 @@ def get_trades_df(symbol: str = "", tag: str = "", start: str = "", end: str = "
     return df
 
 layout = dbc.Container([
-    html.H2("Trade Log"),
+    dbc.Row([
+        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
+        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
+    ], className="align-items-center mb-4 g-0"),
     html.Div(filter_header(prefix="", show_add_trade=True), className="mb-2"),  # Use the reusable filter_header component
     # Remove any dbc.Row or code that creates a second set of quick filter buttons (Today, Yesterday, This Week, etc.) from the Trade Log layout. Only the filter_header should provide these buttons now.
     # Add modal for manual trade entry (cleaned up, no target/stop-loss, improved spacing, date picker for legs)
@@ -181,7 +184,7 @@ layout = dbc.Container([
             {"name": "Notes", "id": "notes_icon", "presentation": "markdown"},
             {"name": "Tags", "id": "tags_icon", "presentation": "markdown"},
         ],
-        data=get_trades_df().to_dict("records"),
+        data=get_trades_df(0, 0).to_dict("records"),
         page_size=20,
         style_table={"overflowX": "auto"},
         style_cell={"textAlign": "left"},
@@ -191,7 +194,7 @@ layout = dbc.Container([
             {
                 "notes_icon": row["notes"] if row["notes_icon"] else None,
                 "tags_icon": row["tags"] if row["tags_icon"] else None
-            } for row in get_trades_df().to_dict("records")
+            } for row in get_trades_df(0, 0).to_dict("records")
         ],
         tooltip_duration=None,
         # Remove clickability: icons are just static markdown, not links
@@ -208,14 +211,16 @@ layout = dbc.Container([
         Input("date-filter", "start_date"),
         Input("date-filter", "end_date"),
         Input("clear-filters", "n_clicks"),
+        Input("user-dropdown", "value"),
+        Input("account-dropdown", "value"),
     ],
     prevent_initial_call=True
 )
-def update_table(symbol, tag, start, end, clear):
+def update_table(symbol, tag, start, end, clear, user_id, account_id):
     ctx = dash.callback_context
     if ctx.triggered and ctx.triggered[0]["prop_id"].startswith("clear-filters"):
-        return get_trades_df().to_dict("records")
-    return get_trades_df(symbol or "", tag or "", start or "", end or "").to_dict("records")
+        return get_trades_df(user_id, account_id).to_dict("records")
+    return get_trades_df(user_id, account_id, symbol or "", tag or "", start or "", end or "").to_dict("records")
 
 @callback(
     Output("date-filter", "start_date"),

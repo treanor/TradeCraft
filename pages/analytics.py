@@ -10,7 +10,7 @@ from utils import db_access
 import dash
 from dash import dash_table
 from datetime import datetime
-from components.filters import filter_header
+from components.filters import filter_header, user_account_dropdowns
 from utils.filters import apply_trade_filters
 
 # Register this as a Dash page
@@ -20,15 +20,15 @@ dash.register_page(__name__, path="/analytics", name="Analytics")
 
 USERNAME = "alice"  # For now, single-user mode
 
-def get_analytics_df() -> pd.DataFrame:
-    """Fetch all trades for the user as a DataFrame with analytics columns."""
-    trades = db_access.fetch_trades_for_user(USERNAME)
+def get_analytics_df(user_id: int, account_id: int) -> pd.DataFrame:
+    """Fetch all trades for the selected user/account as a DataFrame with analytics columns."""
+    trades = db_access.fetch_trades_for_user_and_account(user_id, account_id)
     if not trades:
         return pd.DataFrame()
     df = pd.DataFrame(trades)
     analytics = [db_access.trade_analytics(row["id"]) for _, row in df.iterrows()]
-    df["realized_pnl"] = [a["realized_pnl"] for a in analytics]
-    df["status"] = [a["status"] for a in analytics]
+    df["realized_pnl"] = [a.get("realized_pnl", 0.0) for a in analytics]
+    df["status"] = [a.get("status", "-") for a in analytics]
     # Robust datetime parsing for ISO8601 and mixed formats
     df["opened_at"] = pd.to_datetime(df["opened_at"], format="mixed", errors="coerce")
     df["asset_type"] = df["asset_type"].fillna("")
@@ -39,16 +39,16 @@ def get_analytics_df() -> pd.DataFrame:
 
 def summary_stats(df: pd.DataFrame) -> list:
     """Return summary stats as a list of html.Divs."""
-    if df.empty:
+    if df.empty or "realized_pnl" not in df.columns:
         return [html.Div("No trades to summarize.")]
     total_trades = len(df)
-    wins = (df["realized_pnl"] > 0).sum()
-    losses = (df["realized_pnl"] < 0).sum()
-    open_trades = (df["status"] == "open").sum()
+    wins = (df["realized_pnl"] > 0).sum() if "realized_pnl" in df else 0
+    losses = (df["realized_pnl"] < 0).sum() if "realized_pnl" in df else 0
+    open_trades = (df["status"] == "open").sum() if "status" in df else 0
     win_rate = wins / (wins + losses) * 100 if (wins + losses) > 0 else 0
-    avg_win = df.loc[df["realized_pnl"] > 0, "realized_pnl"].mean() or 0
-    avg_loss = df.loc[df["realized_pnl"] < 0, "realized_pnl"].mean() or 0
-    total_pnl = df["realized_pnl"].sum()
+    avg_win = df.loc[df["realized_pnl"] > 0, "realized_pnl"].mean() if "realized_pnl" in df and (df["realized_pnl"] > 0).any() else 0
+    avg_loss = df.loc[df["realized_pnl"] < 0, "realized_pnl"].mean() if "realized_pnl" in df and (df["realized_pnl"] < 0).any() else 0
+    total_pnl = df["realized_pnl"].sum() if "realized_pnl" in df else 0
     return [
         html.Div(f"Total Trades: {total_trades}"),
         html.Div(f"Wins: {wins}"),
@@ -137,11 +137,20 @@ def symbol_table(df: pd.DataFrame) -> dash_table.DataTable:
     )
 
 # Get tag and symbol options from the data
-analytics_df = get_analytics_df()
-tag_options = sorted({tag.strip() for tags in analytics_df.get('tags', []) if tags for tag in str(tags).split(',')})
-symbol_options = sorted(analytics_df['asset_symbol'].dropna().unique())
+analytics_df = get_analytics_df(user_id=None, account_id=None)  # Provide None to avoid KeyError if empty
+if not analytics_df.empty and 'asset_symbol' in analytics_df.columns:
+    tag_options = sorted({tag.strip() for tags in analytics_df.get('tags', []) if tags for tag in str(tags).split(',')})
+    symbol_options = sorted(analytics_df['asset_symbol'].dropna().unique())
+else:
+    tag_options = []
+    symbol_options = []
 
+# In the main layout, add the dropdowns to the right of the Trade Craft header
 layout = dbc.Container([
+    dbc.Row([
+        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
+        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
+    ], className="align-items-center mb-4 g-0"),
     html.Div(filter_header(prefix="analytics-", show_add_trade=False), className="mb-2"),
     dbc.Row([
         # Add a row of labels for the stat cards
@@ -285,19 +294,27 @@ def clear_analytics_filters(n_clicks: int):
         Input("analytics-tag-filter", "value"),
         Input("analytics-symbol-filter", "value"),
         Input("analytics-clear-filters", "n_clicks"),
+        Input("user-dropdown", "value"),
+        Input("account-dropdown", "value"),
     ]
 )
-def update_dashboard(start_date, end_date, tag, symbol, n_clear):
-    df = get_analytics_df()
+def update_dashboard(start_date, end_date, tag, symbol, n_clear, user_id, account_id):
+    """Update analytics dashboard based on filters and selected user/account."""
+    df = get_analytics_df(user_id, account_id)
     from dash import ctx
     if ctx.triggered_id == "analytics-clear-filters":
         start_date = end_date = tag = symbol = None
     tags = [t.strip() for t in tag.split(",") if t.strip()] if tag else []
     symbols = [s.strip() for s in symbol.split(",") if s.strip()] if symbol else []
     df = apply_trade_filters(df, start_date, end_date, tags, symbols)
+    # Ensure 'realized_pnl' exists
+    if "realized_pnl" not in df.columns:
+        df["realized_pnl"] = 0.0
+    if "status" not in df.columns:
+        df["status"] = "-"
     total_trades = len(df)
-    wins = (df["realized_pnl"] > 0).sum()
-    losses = (df["realized_pnl"] < 0).sum()
+    wins = (df["realized_pnl"] > 0).sum() if not df.empty else 0
+    losses = (df["realized_pnl"] < 0).sum() if not df.empty else 0
     win_rate = f"{(wins / (wins + losses) * 100):.0f}%" if (wins + losses) > 0 else "-"
     expectancy = f"{(df['realized_pnl'].mean() if total_trades else 0):.2f}" if total_trades else "-"
     profit_factor = f"{(df[df['realized_pnl'] > 0]['realized_pnl'].sum() / abs(df[df['realized_pnl'] < 0]['realized_pnl'].sum())):.2f}" if losses > 0 else "-"
@@ -321,8 +338,8 @@ def update_dashboard(start_date, end_date, tag, symbol, n_clear):
         closed = closed[closed["opened_at"].notnull() & closed["closed_at"].notnull()]
         if not closed.empty:
             closed["hold_time"] = closed["closed_at"] - closed["opened_at"]
-            win_holds = closed.loc[closed["realized_pnl"] > 0, "hold_time"].dropna()
-            loss_holds = closed.loc[closed["realized_pnl"] < 0, "hold_time"].dropna()
+            win_holds = closed.loc[closed["realized_pnl"] > 0, "hold_time"].dropna() if "realized_pnl" in closed else pd.Series()
+            loss_holds = closed.loc[closed["realized_pnl"] < 0, "hold_time"].dropna() if "realized_pnl" in closed else pd.Series()
             if not win_holds.empty:
                 avg_win_hold = str(win_holds.mean()).split(".")[0]
             if not loss_holds.empty:

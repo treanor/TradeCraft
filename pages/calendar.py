@@ -9,14 +9,15 @@ import dash
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 from utils.db_access import fetch_trades_for_user
+from components.filters import user_account_dropdowns
 
 # Register page
 dash.register_page(__name__, path="/calendar", name="Calendar")
 
 USERNAME = "alice"
 
-def get_trades_by_day(year: int, month: int) -> pd.DataFrame:
-    trades = fetch_trades_for_user(USERNAME)
+def get_trades_by_day(year: int, month: int, user_id: int, account_id: int) -> pd.DataFrame:
+    trades = db_access.fetch_trades_for_user_and_account(user_id, account_id)
     df = pd.DataFrame(trades)
     if df.empty:
         return df
@@ -100,6 +101,10 @@ def calendar_layout(year: int, month: int) -> html.Div:
     ])
 
 layout = dbc.Container([
+    dbc.Row([
+        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
+        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
+    ], className="align-items-center mb-4 g-0"),
     dcc.Store(id="cal-year", data=date.today().year),
     dcc.Store(id="cal-month", data=date.today().month),
     html.Div(id="calendar-content")
@@ -107,11 +112,14 @@ layout = dbc.Container([
 
 @callback(
     Output("calendar-content", "children"),
-    Input("cal-year", "data"),
-    Input("cal-month", "data")
+    [Input("cal-year", "data"),
+     Input("cal-month", "data"),
+     Input("user-dropdown", "value"),
+     Input("account-dropdown", "value")],
 )
-def update_calendar(year: int, month: int):
-    return calendar_layout(year, month)
+def update_calendar(year, month, user_id, account_id):
+    df = get_trades_by_day(year, month, user_id, account_id)
+    return calendar_layout(df, year, month)
 
 @callback(
     Output("cal-year", "data", allow_duplicate=True),

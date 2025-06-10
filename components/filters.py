@@ -2,7 +2,7 @@
 Reusable filter/header bar for Trade Log and Analytics pages.
 Includes symbol filter, tag filter, date picker, clear button, and quick filter buttons.
 """
-from dash import dcc, html
+from dash import dcc, html, callback, Output, Input
 import dash_bootstrap_components as dbc
 from typing import List, Optional
 from utils import db_access
@@ -125,3 +125,43 @@ def filter_header(
             ], width=2, className="d-flex align-items-end justify-content-end"),
         ], className="mb-2"),
     ])
+
+def user_account_dropdowns() -> html.Div:
+    """Return a row with user and account dropdowns for the header."""
+    # Get users and accounts from the DB
+    users = db_access.get_all_users()  # returns list of dicts: [{id, username}]
+    user_options = [{"label": u["username"], "value": u["id"]} for u in users]
+    # Accounts will be dynamically filtered by user selection in the callback
+    return dbc.Row([
+        dbc.Col([
+            dcc.Dropdown(
+                id="user-dropdown",
+                options=user_options,
+                value=users[0]["id"] if users else None,
+                clearable=False,
+                style={"minWidth": 120, "marginRight": 8},
+            )
+        ], width="auto"),
+        dbc.Col([
+            dcc.Dropdown(
+                id="account-dropdown",
+                options=[],  # Populated by callback
+                value=None,
+                clearable=False,
+                style={"minWidth": 160},
+                placeholder="Select Account"
+            )
+        ], width="auto"),
+    ], className="g-1 align-items-center", style={"marginLeft": 16})
+
+@callback(
+    Output("account-dropdown", "options"),
+    Output("account-dropdown", "value"),
+    Input("user-dropdown", "value"),
+)
+def update_account_dropdown(user_id: int):
+    """Update account dropdown options and value when user changes."""
+    accounts = db_access.get_accounts_for_user(user_id)
+    options = [{"label": f"{a['name']} ({a['broker']})" if a['broker'] else a['name'], "value": a["id"]} for a in accounts]
+    value = options[0]["value"] if options else None
+    return options, value

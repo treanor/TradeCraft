@@ -20,7 +20,7 @@ def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
 
 
 def create_schema(conn: sqlite3.Connection) -> None:
-    """Create tables for users, trades, and trade_legs if they do not exist."""
+    """Create tables for users, trades, trade_legs, tags, trade_tags, symbols, and trade_symbols if they do not exist."""
     cur = conn.cursor()
     cur.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -39,7 +39,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
             opened_at TEXT NOT NULL,
             closed_at TEXT,
             notes TEXT,
-            tags TEXT,
+            tags TEXT,  -- legacy, for migration only
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             FOREIGN KEY(user_id) REFERENCES users(id)
@@ -60,10 +60,45 @@ def create_schema(conn: sqlite3.Connection) -> None:
             FOREIGN KEY(trade_id) REFERENCES trades(id) ON DELETE CASCADE
         )
     ''')
-    # Add indexes for performance
+    # --- New: tags and trade_tags tables ---
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS trade_tags (
+            trade_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (trade_id, tag_id),
+            FOREIGN KEY(trade_id) REFERENCES trades(id) ON DELETE CASCADE,
+            FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        )
+    ''')
+    # --- New: symbols and trade_symbols tables ---
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS symbols (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT UNIQUE NOT NULL
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS trade_symbols (
+            trade_id INTEGER NOT NULL,
+            symbol_id INTEGER NOT NULL,
+            PRIMARY KEY (trade_id, symbol_id),
+            FOREIGN KEY(trade_id) REFERENCES trades(id) ON DELETE CASCADE,
+            FOREIGN KEY(symbol_id) REFERENCES symbols(id) ON DELETE CASCADE
+        )
+    ''')
     cur.execute('CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)')
     cur.execute('CREATE INDEX IF NOT EXISTS idx_trades_asset_symbol ON trades(asset_symbol)')
     cur.execute('CREATE INDEX IF NOT EXISTS idx_trade_legs_trade_id ON trade_legs(trade_id)')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_trade_tags_trade_id ON trade_tags(trade_id)')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_symbols_symbol ON symbols(symbol)')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_trade_symbols_trade_id ON trade_symbols(trade_id)')
     conn.commit()
 
 
@@ -107,6 +142,34 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
     # Insert trades and legs
     random.seed(42)
     trade_id_map = {}
+    tag_name_to_id = {}
+    symbol_to_id = {}
+    def get_or_create_tag_id(tag: str) -> int:
+        tag = tag.strip().lower()
+        if tag in tag_name_to_id:
+            return tag_name_to_id[tag]
+        cur.execute('SELECT id FROM tags WHERE name = ?', (tag,))
+        row = cur.fetchone()
+        if row:
+            tag_id = row[0]
+        else:
+            cur.execute('INSERT INTO tags (name) VALUES (?)', (tag,))
+            tag_id = cur.lastrowid
+        tag_name_to_id[tag] = tag_id
+        return tag_id
+    def get_or_create_symbol_id(symbol: str) -> int:
+        symbol = symbol.strip().upper()
+        if symbol in symbol_to_id:
+            return symbol_to_id[symbol]
+        cur.execute('SELECT id FROM symbols WHERE symbol = ?', (symbol,))
+        row = cur.fetchone()
+        if row:
+            symbol_id = row[0]
+        else:
+            cur.execute('INSERT INTO symbols (symbol) VALUES (?)', (symbol,))
+            symbol_id = cur.lastrowid
+        symbol_to_id[symbol] = symbol_id
+        return symbol_id
     for i, trade_date in enumerate(trade_days):
         user = "alice"
         user_id = user_map[user]
@@ -115,7 +178,6 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
         notes = f"Sample trade for {asset_symbol} on {trade_date}"
         tags = random.choice(["momentum,largecap", "swing,tech", "daytrade,crypto", "options,volatility", "trend,forex"])
         now_iso = datetime.now().isoformat()
-        # --- 20% of trades will be left open (no closing legs) ---
         leave_open = (i % 5 == 0)  # every 5th trade is open
         closed_at = None
         cur.execute(
@@ -124,6 +186,13 @@ def insert_sample_data(conn: sqlite3.Connection) -> None:
         )
         trade_id = cur.lastrowid
         trade_id_map[i] = trade_id
+        # --- Insert tags into tags/trade_tags tables ---
+        for tag in tags.split(","):
+            tag_id = get_or_create_tag_id(tag)
+            cur.execute('INSERT OR IGNORE INTO trade_tags (trade_id, tag_id) VALUES (?, ?)', (trade_id, tag_id))
+        # --- Insert symbol into symbols/trade_symbols tables ---
+        symbol_id = get_or_create_symbol_id(asset_symbol)
+        cur.execute('INSERT OR IGNORE INTO trade_symbols (trade_id, symbol_id) VALUES (?, ?)', (trade_id, symbol_id))
         # Generate 2-4 legs per trade
         legs = []
         qty = random.choice([10, 20, 50, 100])

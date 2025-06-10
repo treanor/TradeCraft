@@ -93,11 +93,11 @@ def insert_trade(user_id: int, asset_symbol: str, asset_type: str, opened_at: st
     Insert a new trade and return its ID.
     Args:
         user_id: The user ID for the trade.
-        asset_symbol: The asset symbol.
+        asset_symbol: The asset symbol (string or list).
         asset_type: The asset type.
         opened_at: ISO datetime string for when the trade was opened.
         notes: Optional notes for the trade.
-        tags: Optional tags for the trade.
+        tags: Optional tags for the trade (comma-separated string or list).
         db_path: Path to the SQLite database file.
     Returns:
         The new trade's ID.
@@ -108,9 +108,38 @@ def insert_trade(user_id: int, asset_symbol: str, asset_type: str, opened_at: st
         cur.execute('''
             INSERT INTO trades (user_id, asset_symbol, asset_type, opened_at, notes, tags, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, asset_symbol, asset_type, opened_at, notes, tags, now, now))
+        ''', (user_id, asset_symbol if isinstance(asset_symbol, str) else ",".join(asset_symbol), asset_type, opened_at, notes, tags if isinstance(tags, str) else ",".join(tags), now, now))
+        trade_id = cur.lastrowid
+        # --- Insert tags into tags/trade_tags tables ---
+        tag_list = tags.split(",") if isinstance(tags, str) else tags
+        for tag in tag_list:
+            tag = tag.strip().lower()
+            if not tag:
+                continue
+            cur.execute('SELECT id FROM tags WHERE name = ?', (tag,))
+            row = cur.fetchone()
+            if row:
+                tag_id = row[0]
+            else:
+                cur.execute('INSERT INTO tags (name) VALUES (?)', (tag,))
+                tag_id = cur.lastrowid
+            cur.execute('INSERT OR IGNORE INTO trade_tags (trade_id, tag_id) VALUES (?, ?)', (trade_id, tag_id))
+        # --- Insert symbols into symbols/trade_symbols tables ---
+        symbol_list = asset_symbol.split(",") if isinstance(asset_symbol, str) else asset_symbol
+        for symbol in symbol_list:
+            symbol = symbol.strip().upper()
+            if not symbol:
+                continue
+            cur.execute('SELECT id FROM symbols WHERE symbol = ?', (symbol,))
+            row = cur.fetchone()
+            if row:
+                symbol_id = row[0]
+            else:
+                cur.execute('INSERT INTO symbols (symbol) VALUES (?)', (symbol,))
+                symbol_id = cur.lastrowid
+            cur.execute('INSERT OR IGNORE INTO trade_symbols (trade_id, symbol_id) VALUES (?, ?)', (trade_id, symbol_id))
         conn.commit()
-        return cur.lastrowid
+        return trade_id
 
 
 def insert_trade_leg(trade_id: int, action: str, quantity: int, price: float, fees: float, executed_at: str, notes: str = "", db_path: Path = DB_PATH) -> int:
@@ -197,3 +226,83 @@ def trade_analytics(trade_id: int, db_path: Path = DB_PATH) -> Dict[str, Any]:
         "open_qty": open_qty,
         "status": status,
     }
+
+
+def get_tags_for_trade(trade_id: int, db_path: Path = DB_PATH) -> list[str]:
+    """Return a list of tag names for a given trade."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT tags.name FROM tags
+            JOIN trade_tags ON tags.id = trade_tags.tag_id
+            WHERE trade_tags.trade_id = ?
+        ''', (trade_id,))
+        return [row[0] for row in cur.fetchall()]
+
+
+def get_all_tags(db_path: Path = DB_PATH) -> list[str]:
+    """Return all unique tag names in the system."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT name FROM tags ORDER BY name')
+        return [row[0] for row in cur.fetchall()]
+
+
+def set_tags_for_trade(trade_id: int, tags: list[str], db_path: Path = DB_PATH) -> None:
+    """Set the tags for a trade, replacing any existing tags."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        # Remove existing
+        cur.execute('DELETE FROM trade_tags WHERE trade_id = ?', (trade_id,))
+        # Insert new tags
+        for tag in tags:
+            tag = tag.strip().lower()
+            cur.execute('SELECT id FROM tags WHERE name = ?', (tag,))
+            row = cur.fetchone()
+            if row:
+                tag_id = row[0]
+            else:
+                cur.execute('INSERT INTO tags (name) VALUES (?)', (tag,))
+                tag_id = cur.lastrowid
+            cur.execute('INSERT OR IGNORE INTO trade_tags (trade_id, tag_id) VALUES (?, ?)', (trade_id, tag_id))
+        conn.commit()
+
+
+def get_symbols_for_trade(trade_id: int, db_path: Path = DB_PATH) -> list[str]:
+    """Return a list of symbols for a given trade."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT symbols.symbol FROM symbols
+            JOIN trade_symbols ON symbols.id = trade_symbols.symbol_id
+            WHERE trade_symbols.trade_id = ?
+        ''', (trade_id,))
+        return [row[0] for row in cur.fetchall()]
+
+
+def get_all_symbols(db_path: Path = DB_PATH) -> list[str]:
+    """Return all unique symbols in the system."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT symbol FROM symbols ORDER BY symbol')
+        return [row[0] for row in cur.fetchall()]
+
+
+def set_symbols_for_trade(trade_id: int, symbols: list[str], db_path: Path = DB_PATH) -> None:
+    """Set the symbols for a trade, replacing any existing symbols."""
+    with get_connection(db_path) as conn:
+        cur = conn.cursor()
+        # Remove existing
+        cur.execute('DELETE FROM trade_symbols WHERE trade_id = ?', (trade_id,))
+        # Insert new symbols
+        for symbol in symbols:
+            symbol = symbol.strip().upper()
+            cur.execute('SELECT id FROM symbols WHERE symbol = ?', (symbol,))
+            row = cur.fetchone()
+            if row:
+                symbol_id = row[0]
+            else:
+                cur.execute('INSERT INTO symbols (symbol) VALUES (?)', (symbol,))
+                symbol_id = cur.lastrowid
+            cur.execute('INSERT OR IGNORE INTO trade_symbols (trade_id, symbol_id) VALUES (?, ?)', (trade_id, symbol_id))
+        conn.commit()

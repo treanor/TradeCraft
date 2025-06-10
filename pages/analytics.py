@@ -92,13 +92,14 @@ def stat_card(title: str, value: str) -> dbc.Card:
 # Define tag_table and symbol_table before layout so they are available
 
 def tag_table(df: pd.DataFrame) -> dash_table.DataTable:
-    if df.empty or "tags" not in df:
+    if df.empty or "id" not in df:
         return html.Div("No tag data.")
+    import utils.db_access as db_access
     tag_rows = []
     for _, row in df.iterrows():
-        tags = row.get("tags", "")
+        tags = db_access.get_tags_for_trade(row["id"])
         if tags:
-            for tag in tags.split(","):
+            for tag in tags:
                 tag_rows.append({"tag": tag.strip(), "pnl": row["realized_pnl"]})
     tag_df = pd.DataFrame(tag_rows)
     if tag_df.empty:

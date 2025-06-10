@@ -53,23 +53,27 @@ def get_trades_df(symbol: str = "", tag: str = "", start: str = "", end: str = "
             status = "-"
         # Add icon columns for notes/tags
         notes_icon = f"📝" if row.get("notes") else ""
-        tags_icon = f"🏷️" if row.get("tags") else ""
+        # --- Use normalized tags ---
+        tags_list = db_access.get_tags_for_trade(row["id"])
+        tags_str = ", ".join(tags_list)
+        tags_icon = f"🏷️" if tags_list else ""
+        # --- Use normalized symbols ---
+        symbols_list = db_access.get_symbols_for_trade(row["id"])
+        symbols_str = ", ".join(symbols_list)
         analytics_list.append({
             "date": opened_at.date().isoformat(),
-            "symbol": row["asset_symbol"],
+            "symbol": symbols_str,
             "status": status,
             "quantity": analytics["total_bought"],
             "entry_price": entry_leg["price"] if entry_leg else None,
             "exit_price": exit_leg["price"] if exit_leg else None,
-            "entry_total": entry_total,
-            "exit_total": exit_total,
             "hold_time": str(hold_time) if hold_time is not None else ("Open" if analytics["status"] == "open" else None),
             "return_dollar": return_dollar,
             "return_pct": return_pct,
             "notes_icon": notes_icon,
             "tags_icon": tags_icon,
             "notes": row.get("notes", ""),
-            "tags": row.get("tags", ""),
+            "tags": tags_str,
             "id": row["id"]
         })
     df = pd.DataFrame(analytics_list)

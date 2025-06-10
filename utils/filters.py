@@ -21,8 +21,9 @@ def apply_trade_filters(
     if end_date:
         df = df[df["opened_at"] <= pd.to_datetime(end_date)]
     if tags:
-        # Assume tags column is comma-separated string
-        df = df[df["tags"].fillna("").apply(lambda t: any(tag in [x.strip() for x in t.split(",")] for tag in tags))]
+        # Assume tags column is a list of strings or comma-separated string
+        df = df[df["tags"].apply(lambda taglist: any(tag in taglist for tag in tags) if isinstance(taglist, list) else any(tag in taglist.split(",") for tag in tags))]
     if symbols:
-        df = df[df["asset_symbol"].isin(symbols)]
+        # Assume symbol column is a string (possibly comma-separated for multi-symbol trades)
+        df = df[df["symbol"].apply(lambda s: any(sym in s.split(",") for sym in symbols))]
     return df

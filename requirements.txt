@@ -1,0 +1,19 @@
+# Core Dash dependencies
+dash==2.17.1
+dash-bootstrap-components==1.5.0
+plotly==5.17.0
+pandas==2.1.4
+
+# Database and utilities
+sqlite3  # Built into Python
+python-dateutil==2.8.2
+
+# Development and testing
+pytest==7.4.3
+pytest-cov==4.1.0
+black==23.12.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Optional: For future API integrations
+requests==2.31.0

@@ -97,6 +97,42 @@ body {
   margin-bottom: 0;
 }
 
+.stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+.stat-card {
+  background: #23273A;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px #00FFCC33;
+  padding: 18px 24px;
+  min-width: 180px;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  border-left: 3px solid #1AA9E5;
+  margin-bottom: 8px;
+}
+.stat-label {
+  color: #b0dfff;
+  font-size: 1.02rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.stat-value {
+  font-size: 1.35rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 16px #00FFCC40;
+}
+
 /* Remove candlestick watermark background from body */
 body::before {
   content: none;

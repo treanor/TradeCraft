@@ -38,7 +38,7 @@ def get_analytics_df(user_id: int, account_id: int) -> pd.DataFrame:
     return df
 
 def summary_stats(df: pd.DataFrame) -> list:
-    """Return summary stats as a styled neon/dark card."""
+    """Return summary stats as a grid of stat cards, matching the provided design and metrics."""
     if df.empty or "realized_pnl" not in df.columns:
         return [html.Div("No trades to summarize.")]
     total_trades = len(df)
@@ -46,37 +46,113 @@ def summary_stats(df: pd.DataFrame) -> list:
     losses = (df["realized_pnl"] < 0).sum() if "realized_pnl" in df else 0
     open_trades = (df["status"] == "open").sum() if "status" in df else 0
     win_rate = wins / (wins + losses) * 100 if (wins + losses) > 0 else 0
-    avg_win = df.loc[df["realized_pnl"] > 0, "realized_pnl"].mean() if "realized_pnl" in df and (df["realized_pnl"] > 0).any() else 0
-    avg_loss = df.loc[df["realized_pnl"] < 0, "realized_pnl"].mean() if "realized_pnl" in df and (df["realized_pnl"] < 0).any() else 0
-    total_pnl = df["realized_pnl"].sum() if "realized_pnl" in df else 0
-    return [
+    expectancy = df["realized_pnl"].mean() if total_trades > 0 else 0
+    profit_factor = (
+        df[df["realized_pnl"] > 0]["realized_pnl"].sum() / abs(df[df["realized_pnl"] < 0]["realized_pnl"].sum())
+        if losses > 0 else 0
+    )
+    # Hold times
+    avg_win_hold = avg_loss_hold = "-"
+    if "opened_at" in df.columns and "closed_at" in df.columns:
+        closed = df[df["status"] == "closed"].copy()
+        closed["opened_at"] = pd.to_datetime(closed["opened_at"], errors="coerce")
+        closed["closed_at"] = pd.to_datetime(closed["closed_at"], errors="coerce")
+        closed = closed[closed["opened_at"].notnull() & closed["closed_at"].notnull()]
+        if not closed.empty:
+            closed["hold_time"] = closed["closed_at"] - closed["opened_at"]
+            win_holds = closed.loc[closed["realized_pnl"] > 0, "hold_time"].dropna()
+            loss_holds = closed.loc[closed["realized_pnl"] < 0, "hold_time"].dropna()
+            if not win_holds.empty:
+                avg = win_holds.mean()
+                avg_win_hold = f"{avg.days} Days" if avg.days > 0 else f"{avg.seconds//3600} Hrs"
+            if not loss_holds.empty:
+                avg = loss_holds.mean()
+                avg_loss_hold = f"{avg.days} Days" if avg.days > 0 else f"{avg.seconds//3600} Hrs"
+    avg_loss = df[df["realized_pnl"] < 0]["realized_pnl"].mean() if losses > 0 else 0
+    avg_win = df[df["realized_pnl"] > 0]["realized_pnl"].mean() if wins > 0 else 0
+    # Add % for avg win/loss
+    avg_loss_pct = df[df["realized_pnl"] < 0]["return_pct"].mean() if "return_pct" in df and losses > 0 else 0
+    avg_win_pct = df[df["realized_pnl"] > 0]["return_pct"].mean() if "return_pct" in df and wins > 0 else 0
+    # Streaks
+    def max_streak(series):
+        streak = max_streak = 0
+        for val in series:
+            if val:
+                streak += 1
+                max_streak = max(max_streak, streak)
+            else:
+                streak = 0
+        return max_streak
+    win_streak = max_streak(df["realized_pnl"] > 0) if total_trades else 0
+    loss_streak = max_streak(df["realized_pnl"] < 0) if total_trades else 0
+    # Top win/loss
+    top_win = df["realized_pnl"].max() if not df.empty else 0
+    top_loss = df["realized_pnl"].min() if not df.empty else 0
+    top_win_pct = df.loc[df["realized_pnl"].idxmax(), "return_pct"] if not df.empty and "return_pct" in df else 0
+    top_loss_pct = df.loc[df["realized_pnl"].idxmin(), "return_pct"] if not df.empty and "return_pct" in df else 0
+    # Avg daily vol (trades per day)
+    if "opened_at" in df.columns:
+        df["date"] = pd.to_datetime(df["opened_at"]).dt.date
+        avg_daily_vol = int(df.groupby("date").size().mean())
+    else:
+        avg_daily_vol = 0
+    # Avg size (quantity)
+    avg_size = int(df["quantity"].mean()) if "quantity" in df and not df.empty else 0
+    stat_cards = [
         html.Div([
-            html.Span("Total Trades", style={"color": "#b0dfff", "fontWeight": "bold"}),
-            html.Span(f" {total_trades}", style={"color": "#fff", "fontWeight": "bold", "marginLeft": "8px"}),
-            html.Span("  |  "),
-            html.Span("Wins", style={"color": "#b0dfff", "fontWeight": "bold"}),
-            html.Span(f" {wins}", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
-            html.Span("  |  "),
-            html.Span("Losses", style={"color": "#b0dfff", "fontWeight": "bold"}),
-            html.Span(f" {losses}", style={"color": "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
-            html.Span("  |  "),
-            html.Span("Open", style={"color": "#b0dfff", "fontWeight": "bold"}),
-            html.Span(f" {open_trades}", style={"color": "#b0dfff", "fontWeight": "bold", "marginLeft": "8px"}),
-        ], style={"fontSize": "1.1rem", "marginBottom": "8px"}),
+            html.Div("WIN RATE", className="stat-label"),
+            html.Div(f"{win_rate:.0f}%", className="stat-value")
+        ], className="stat-card"),
         html.Div([
-            html.Span("Win Rate", style={"color": "#b0dfff"}),
-            html.Span(f" {win_rate:.1f}%", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
-            html.Span("  |  "),
-            html.Span("Avg Win", style={"color": "#b0dfff"}),
-            html.Span(f" ${avg_win:.2f}", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
-            html.Span("  |  "),
-            html.Span("Avg Loss", style={"color": "#b0dfff"}),
-            html.Span(f" ${avg_loss:.2f}", style={"color": "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
-            html.Span("  |  "),
-            html.Span("Total P&L", style={"color": "#b0dfff"}),
-            html.Span(f" ${total_pnl:.2f}", style={"color": "#00FFCC" if total_pnl >= 0 else "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
-        ], style={"fontSize": "1.1rem"}),
+            html.Div("EXPECTANCY", className="stat-label"),
+            html.Div(f"{expectancy:.0f}", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("PROFIT FACTOR", className="stat-label"),
+            html.Div(f"{profit_factor:.2f}", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("AVG WIN HOLD", className="stat-label"),
+            html.Div(avg_win_hold, className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("AVG LOSS HOLD", className="stat-label"),
+            html.Div(avg_loss_hold, className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("AVG LOSS", className="stat-label"),
+            html.Div(f"${avg_loss:.2f} ({avg_loss_pct:.1f}%)", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("AVG WIN", className="stat-label"),
+            html.Div(f"${avg_win:.2f} ({avg_win_pct:.1f}%)", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("WIN STREAK", className="stat-label"),
+            html.Div(f"{win_streak}", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("LOSS STREAK", className="stat-label"),
+            html.Div(f"{loss_streak}", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("TOP LOSS", className="stat-label"),
+            html.Div(f"${top_loss:.2f} ({top_loss_pct:.1f}%)", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("TOP WIN", className="stat-label"),
+            html.Div(f"${top_win:.2f} ({top_win_pct:.1f}%)", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("AVG DAILY VOL", className="stat-label"),
+            html.Div(f"{avg_daily_vol}", className="stat-value")
+        ], className="stat-card"),
+        html.Div([
+            html.Div("AVG SIZE", className="stat-label"),
+            html.Div(f"{avg_size}", className="stat-value")
+        ], className="stat-card"),
     ]
+    return [html.Div(stat_cards, className="stats-grid")]
 
 def pnl_over_time_figure(df: pd.DataFrame) -> go.Figure:
     """Return a Plotly figure of cumulative P&L over time (neon/dark theme)."""
@@ -193,41 +269,49 @@ else:
     symbol_options = []
 
 # In the main layout, add the dropdowns to the right of the Trade Craft header
-# Modern Analytics Page Layout (neon/dark theme)
+# Modern Analytics Page Layout (neon/dark theme, matches Trade Log)
 layout = html.Div([
-    html.H2([
-        html.Span("Analytics", className="section-title"),
-        html.Span(" ", style={"marginLeft": "8px"}),
-        html.Span("📊", style={"fontSize": "2rem", "verticalAlign": "middle"})
-    ], style={"color": "#fff", "fontWeight": "bold", "marginBottom": "18px"}),
-    html.Div(user_account_dropdowns(), style={"marginBottom": "18px"}),
-    html.Div(filter_header(prefix="analytics", show_add_trade=False), className="filter-row", style={"marginBottom": "18px"}),
+    html.Div(
+        [
+            html.Div(user_account_dropdowns(), style={"marginRight": "18px", "maxWidth": "260px", "flex": "0 0 260px"}),
+            html.Div(filter_header(prefix="analytics", show_add_trade=False), style={"maxWidth": "600px", "flex": "0 0 600px"}),
+        ],
+        className="d-flex align-items-start justify-content-between",
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "flex-start",
+            "justifyContent": "space-between",
+            "marginBottom": "18px",
+            "gap": "18px",
+            "width": "100%"
+        },
+    ),
+    # Stat card grid directly under filters, full width
+    html.Div(id="analytics-summary-stats", className="stats", style={"marginBottom": "24px", "width": "100%"}),
     html.Div([
-        dcc.Graph(id="pnl-over-time", style={"background": "#23273A", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33", "padding": "12px"}),
-    ], className="card", style={"marginBottom": "24px"}),
-    html.Div([
-        html.Div(id="analytics-summary-stats", className="stats"),
+        dcc.Graph(id="analytics-pnl-curve", style={"background": "#23273A", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33", "padding": "12px"}),
     ], className="card", style={"marginBottom": "24px"}),
     html.Div([
         html.Div([
             html.H4("Asset Allocation", className="section-title", style={"fontSize": "1.3rem", "marginBottom": "12px"}),
             dcc.Graph(id="asset-allocation-chart", style={"background": "#23273A", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33", "padding": "12px"}),
-        ], className="card", style={"marginBottom": "24px"}),
+        ], className="card", style={"marginBottom": "24px", "minWidth": "340px", "flex": "1 1 340px"}),
         html.Div([
             html.H4("PnL by Tag", className="section-title", style={"fontSize": "1.3rem", "marginBottom": "12px"}),
             html.Div(id="tag-table-container"),
-        ], className="card", style={"marginBottom": "24px"}),
+        ], className="card", style={"marginBottom": "24px", "minWidth": "340px", "flex": "1 1 340px"}),
         html.Div([
             html.H4("PnL by Symbol", className="section-title", style={"fontSize": "1.3rem", "marginBottom": "12px"}),
             html.Div(id="symbol-table-container"),
-        ], className="card", style={"marginBottom": "24px"}),
-    ], style={"display": "flex", "flexWrap": "wrap", "gap": "24px"}),
+        ], className="card", style={"marginBottom": "24px", "minWidth": "340px", "flex": "1 1 340px"}),
+    ], style={"display": "flex", "flexWrap": "wrap", "gap": "24px", "width": "100%"}),
 ])
 
 # Quick filter callback (sets date range based on which quickfilter button is pressed)
 @callback(
-    Output("analytics-date-filter", "start_date"),
-    Output("analytics-date-filter", "end_date"),
+    Output("analyticsdate-filter", "start_date"),
+    Output("analyticsdate-filter", "end_date"),
     [
         Input("analytics-quickfilter-today", "n_clicks"),
         Input("analytics-quickfilter-yesterday", "n_clicks"),
@@ -236,7 +320,7 @@ layout = html.Div([
         Input("analytics-quickfilter-thismonth", "n_clicks"),
         Input("analytics-quickfilter-lastmonth", "n_clicks"),
         Input("analytics-quickfilter-alltime", "n_clicks"),
-        Input("analytics-clear-filters", "n_clicks"),
+        Input("analyticsclear-filters", "n_clicks"),
     ],
     prevent_initial_call=True
 )
@@ -265,17 +349,17 @@ def set_analytics_quick_date_filter(today, yesterday, thisweek, lastweek, thismo
         start = last_month_end.replace(day=1)
         end = last_month_end
         return start.date().isoformat(), end.date().isoformat()
-    elif triggered == "analytics-quickfilter-alltime" or triggered == "analytics-clear-filters":
+    elif triggered == "analytics-quickfilter-alltime" or triggered == "analyticsclear-filters":
         return None, None
     return dash.no_update, dash.no_update
 
 # Add a callback to reset all filter inputs when 'Clear Filters' is clicked
 @callback(
-    Output("analytics-symbol-filter", "value", allow_duplicate=True),
-    Output("analytics-tag-filter", "value", allow_duplicate=True),
-    Output("analytics-date-filter", "start_date", allow_duplicate=True),
-    Output("analytics-date-filter", "end_date", allow_duplicate=True),
-    Input("analytics-clear-filters", "n_clicks"),
+    Output("analyticssymbol-filter", "value", allow_duplicate=True),
+    Output("analyticstag-filter", "value", allow_duplicate=True),
+    Output("analyticsdate-filter", "start_date", allow_duplicate=True),
+    Output("analyticsdate-filter", "end_date", allow_duplicate=True),
+    Input("analyticsclear-filters", "n_clicks"),
     prevent_initial_call=True
 )
 def clear_analytics_filters(n_clicks: int):
@@ -286,103 +370,37 @@ def clear_analytics_filters(n_clicks: int):
 @callback(
     [
         Output("analytics-pnl-curve", "figure"),
-        Output("analytics-perf-dow", "figure"),
-        Output("analytics-perf-hour", "figure"),
-        Output("stat-winrate", "children"),
-        Output("stat-expectancy", "children"),
-        Output("stat-profitfactor", "children"),
-        Output("stat-avgwinhold", "children"),
-        Output("stat-avglosshold", "children"),
-        Output("stat-avgloss", "children"),
-        Output("stat-avgwin", "children"),
-        Output("stat-winstreak", "children"),
-        Output("stat-lossstreak", "children"),
-        Output("stat-topwin", "children"),
-        Output("stat-toploss", "children"),
+        Output("analytics-summary-stats", "children"),
+        Output("asset-allocation-chart", "figure"),
+        Output("tag-table-container", "children"),
+        Output("symbol-table-container", "children"),
     ],
     [
-        Input("analytics-date-filter", "start_date"),
-        Input("analytics-date-filter", "end_date"),
-        Input("analytics-tag-filter", "value"),
-        Input("analytics-symbol-filter", "value"),
-        Input("analytics-clear-filters", "n_clicks"),
+        Input("analyticsdate-filter", "start_date"),
+        Input("analyticsdate-filter", "end_date"),
+        Input("analyticstag-filter", "value"),
+        Input("analyticssymbol-filter", "value"),
+        Input("analyticsclear-filters", "n_clicks"),
         Input("user-store", "data"),
         Input("account-dropdown", "value"),
     ]
 )
-def update_dashboard(start_date, end_date, tag, symbol, n_clear, user_id, account_id):
+def update_analytics_dashboard(start_date, end_date, tag, symbol, n_clear, user_id, account_id):
     """Update analytics dashboard based on filters and selected user/account."""
     df = get_analytics_df(user_id, account_id)
     from dash import ctx
-    if ctx.triggered_id == "analytics-clear-filters":
+    if ctx.triggered_id == "analyticsclear-filters":
         start_date = end_date = tag = symbol = None
     tags = [t.strip() for t in tag.split(",") if t.strip()] if tag else []
     symbols = [s.strip() for s in symbol.split(",") if s.strip()] if symbol else []
     df = apply_trade_filters(df, start_date, end_date, tags, symbols)
-    # Ensure 'realized_pnl' exists
-    if "realized_pnl" not in df.columns:
-        df["realized_pnl"] = 0.0
-    if "status" not in df.columns:
-        df["status"] = "-"
-    total_trades = len(df)
-    wins = (df["realized_pnl"] > 0).sum() if not df.empty else 0
-    losses = (df["realized_pnl"] < 0).sum() if not df.empty else 0
-    win_rate = f"{(wins / (wins + losses) * 100):.0f}%" if (wins + losses) > 0 else "-"
-    expectancy = f"{(df['realized_pnl'].mean() if total_trades else 0):.2f}" if total_trades else "-"
-    profit_factor = f"{(df[df['realized_pnl'] > 0]['realized_pnl'].sum() / abs(df[df['realized_pnl'] < 0]['realized_pnl'].sum())):.2f}" if losses > 0 else "-"
-    # Calculate average win hold and loss hold
-    avg_win_hold = "-"
-    avg_loss_hold = "-"
-    # Try to infer closed_at if not present
-    if "closed_at" not in df.columns:
-        # Try to get closed_at from trade analytics if available
-        if "id" in df.columns:
-            from utils import db_access
-            closed_ats = []
-            for trade_id in df["id"]:
-                analytics = db_access.trade_analytics(trade_id)
-                closed_ats.append(analytics.get("closed_at"))
-            df["closed_at"] = pd.to_datetime(closed_ats, errors="coerce")
-    if not df.empty and "opened_at" in df.columns and "closed_at" in df.columns:
-        closed = df[df["status"] == "closed"].copy()
-        closed["opened_at"] = pd.to_datetime(closed["opened_at"], errors="coerce")
-        closed["closed_at"] = pd.to_datetime(closed["closed_at"], errors="coerce")
-        closed = closed[closed["opened_at"].notnull() & closed["closed_at"].notnull()]
-        if not closed.empty:
-            closed["hold_time"] = closed["closed_at"] - closed["opened_at"]
-            win_holds = closed.loc[closed["realized_pnl"] > 0, "hold_time"].dropna() if "realized_pnl" in closed else pd.Series()
-            loss_holds = closed.loc[closed["realized_pnl"] < 0, "hold_time"].dropna() if "realized_pnl" in closed else pd.Series()
-            if not win_holds.empty:
-                avg_win_hold = str(win_holds.mean()).split(".")[0]
-            if not loss_holds.empty:
-                avg_loss_hold = str(loss_holds.mean()).split(".")[0]
-    avg_loss = f"${df[df['realized_pnl'] < 0]['realized_pnl'].mean():.2f}" if losses > 0 else "-"
-    avg_win = f"${df[df['realized_pnl'] > 0]['realized_pnl'].mean():.2f}" if wins > 0 else "-"
-    win_streak = str(max_streak(df["realized_pnl"] > 0)) if total_trades else "-"
-    loss_streak = str(max_streak(df["realized_pnl"] < 0)) if total_trades else "-"
-    top_win = f"${df['realized_pnl'].max():.2f}" if not df.empty else "-"
-    top_loss = f"${df['realized_pnl'].min():.2f}" if not df.empty else "-"
+    # Main charts and tables
     pnl_curve = pnl_over_time_figure(df)
-    perf_dow = performance_by_day_chart(df)
-    perf_hour = performance_by_hour_chart(df)
-    def card_val(val):
-        return stat_card("", val)
-    return (
-        pnl_curve,
-        perf_dow,
-        perf_hour,
-        card_val(win_rate),
-        card_val(expectancy),
-        card_val(profit_factor),
-        card_val(avg_win_hold),
-        card_val(avg_loss_hold),
-        card_val(avg_loss),
-        card_val(avg_win),
-        card_val(win_streak),
-        card_val(loss_streak),
-        card_val(top_win),
-        card_val(top_loss),
-    )
+    stats = summary_stats(df)
+    asset_alloc = asset_allocation_figure(df)
+    tag_tbl = tag_table(df)
+    symbol_tbl = symbol_table(df)
+    return pnl_curve, stats, asset_alloc, tag_tbl, symbol_tbl
 
 def max_streak(series: pd.Series) -> int:
     streak = max_streak = 0

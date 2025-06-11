@@ -50,16 +50,16 @@ def calendar_layout(year: int, month: int, user_id: int, account_id: int) -> htm
         week_days = [d for d in month_days[week:week+7] if d.month == month]
         for d in month_days[week:week+7]:
             if d.month != month:
-                days.append(html.Td("", style={"background": "#f8f9fa"}))
+                days.append(html.Td("", style={"background": "#181C25"}))
             else:
                 pnl = day_stats.loc[d, "pnl"] if d in day_stats.index else 0
                 ntrades = day_stats.loc[d, "trades"] if d in day_stats.index else 0
-                color = "green" if pnl > 0 else ("red" if pnl < 0 else "#888")
+                color = "#00FFCC" if pnl > 0 else ("#FF4C6A" if pnl < 0 else "#b0dfff")
                 days.append(html.Td([
-                    html.Div(str(d.day), style={"position": "absolute", "top": 4, "right": 8, "fontSize": "0.95em", "color": "#888"}),
+                    html.Div(str(d.day), style={"position": "absolute", "top": 4, "right": 8, "fontSize": "0.95em", "color": "#b0dfff"}),
                     html.Div(f"${pnl:.0f}", style={"color": color, "fontWeight": "bold", "marginTop": "18px"}),
-                    html.Div(f"{ntrades} Trade{'s' if ntrades != 1 else ''}", style={"fontSize": "0.9em"})
-                ], style={"padding": "8px", "border": "1px solid #ddd", "textAlign": "center", "position": "relative", "height": "64px", "verticalAlign": "top"}))
+                    html.Div(f"{ntrades} Trade{'s' if ntrades != 1 else ''}", style={"fontSize": "0.9em", "color": "#F6F8FA"})
+                ], style={"padding": "8px", "border": "1px solid #23273A", "textAlign": "center", "position": "relative", "height": "64px", "verticalAlign": "top", "background": "#23273A", "borderRadius": "12px", "boxShadow": "0 2px 8px #00FFCC22"}))
         # Weekly summary for this week
         week_df = df[df["date"].isin(week_days)]
         pnl = week_df["realized_pnl"].sum()
@@ -67,51 +67,54 @@ def calendar_layout(year: int, month: int, user_id: int, account_id: int) -> htm
         losses = (week_df["realized_pnl"] < 0).sum()
         win_rate = (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0
         summary_box = html.Div([
-            html.Div(f"P&L: ${pnl:.0f}", style={"color": "green" if pnl > 0 else ("red" if pnl < 0 else "#888"), "fontWeight": "bold"}),
-            html.Div(f"Win Rate: {win_rate:.0f}%"),
-            html.Div(f"Wins: {wins}  Losses: {losses}")
+            html.Div(f"P&L: ${pnl:.0f}", style={"color": "#00FFCC" if pnl > 0 else ("#FF4C6A" if pnl < 0 else "#b0dfff"), "fontWeight": "bold"}),
+            html.Div(f"Win Rate: {win_rate:.0f}%", style={"color": "#b0dfff"}),
+            html.Div(f"Wins: {wins}  Losses: {losses}", style={"color": "#b0dfff"})
         ], style={
-            "border": "2px solid #b8b8b8",
-            "borderRadius": "8px",
+            "border": "2px solid #00FFCC",
+            "borderRadius": "12px",
             "padding": "8px 10px",
             "marginLeft": "8px",
-            "background": "#f5f5f5",
+            "background": "#23273A",
             "minWidth": "110px",
             "fontSize": "0.97em",
-            "textAlign": "left"
+            "textAlign": "left",
+            "boxShadow": "0 2px 8px #00FFCC22"
         })
-        # Add the summary as the last (rightmost) cell in the week row
-        days.append(html.Td(summary_box, style={"verticalAlign": "top", "background": "#f8f9fa"}))
+        days.append(html.Td(summary_box, style={"verticalAlign": "top", "background": "#181C25"}))
         weeks.append(html.Tr(days))
     # Month navigation
     prev_month = (date(year, month, 1) - timedelta(days=1)).replace(day=1)
     next_month = (date(year, month, 28) + timedelta(days=4)).replace(day=1)
     return html.Div([
-        dbc.Row([
-            dbc.Col(dbc.Button("<", id="cal-prev-month", n_clicks=0, color="secondary", outline=True, size="sm"), width="auto"),
-            dbc.Col(html.H4(f"{calendar.month_name[month]} {year}", className="text-center"), width=8),
-            dbc.Col(dbc.Button(">", id="cal-next-month", n_clicks=0, color="secondary", outline=True, size="sm"), width="auto"),
-        ], align="center", className="mb-2 g-2 justify-content-center"),
+        html.Div([
+            html.Button("<", id="cal-prev-month", n_clicks=0, className="button-primary", style={"marginRight": "12px"}),
+            html.Span(f"{calendar.month_name[month]} {year}", className="section-title", style={"fontSize": "1.3rem", "marginRight": "12px"}),
+            html.Button(">", id="cal-next-month", n_clicks=0, className="button-primary"),
+        ], style={"display": "flex", "alignItems": "center", "justifyContent": "center", "marginBottom": "18px"}),
         html.Table([
             html.Thead(html.Tr([
-                *[html.Th(day) for day in ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]],
-                html.Th("Weekly Summary")
+                *[html.Th(day, style={"color": "#00FFCC", "background": "#181C25", "fontWeight": "bold", "fontSize": "1.1em"}) for day in ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]],
+                html.Th("Weekly Summary", style={"color": "#00FFCC", "background": "#181C25", "fontWeight": "bold", "fontSize": "1.1em"})
             ])),
             html.Tbody(weeks)
-        ], style={"width": "100%", "marginBottom": "16px"}),
+        ], style={"width": "100%", "marginBottom": "16px", "background": "#181C25", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33"}),
     ])
 
-layout = dbc.Container([
-    dbc.Row([
-        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
-        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
-    ], className="align-items-center mb-4 g-0"),
+# Modern Calendar Page Layout (neon/dark theme)
+layout = html.Div([
+    html.H2([
+        html.Span("Calendar", className="section-title"),
+        html.Span(" ", style={"marginLeft": "8px"}),
+        html.Span("🗓️", style={"fontSize": "2rem", "verticalAlign": "middle"})
+    ], style={"color": "#fff", "fontWeight": "bold", "marginBottom": "18px"}),
+    html.Div(user_account_dropdowns(), style={"marginBottom": "18px"}),
     dcc.Store(id="user-store", storage_type="local"),
     dcc.Store(id="account-store", storage_type="local"),
     dcc.Store(id="cal-year", data=date.today().year),
     dcc.Store(id="cal-month", data=date.today().month),
-    html.Div(id="calendar-content")
-], fluid=True)
+    html.Div(id="calendar-content", className="card", style={"padding": "18px", "marginBottom": "24px"})
+])
 
 @callback(
     Output("calendar-content", "children"),

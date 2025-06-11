@@ -38,7 +38,7 @@ def get_analytics_df(user_id: int, account_id: int) -> pd.DataFrame:
     return df
 
 def summary_stats(df: pd.DataFrame) -> list:
-    """Return summary stats as a list of html.Divs."""
+    """Return summary stats as a styled neon/dark card."""
     if df.empty or "realized_pnl" not in df.columns:
         return [html.Div("No trades to summarize.")]
     total_trades = len(df)
@@ -50,18 +50,36 @@ def summary_stats(df: pd.DataFrame) -> list:
     avg_loss = df.loc[df["realized_pnl"] < 0, "realized_pnl"].mean() if "realized_pnl" in df and (df["realized_pnl"] < 0).any() else 0
     total_pnl = df["realized_pnl"].sum() if "realized_pnl" in df else 0
     return [
-        html.Div(f"Total Trades: {total_trades}"),
-        html.Div(f"Wins: {wins}"),
-        html.Div(f"Losses: {losses}"),
-        html.Div(f"Open: {open_trades}"),
-        html.Div(f"Win Rate: {win_rate:.1f}%"),
-        html.Div(f"Avg Win: ${avg_win:.2f}"),
-        html.Div(f"Avg Loss: ${avg_loss:.2f}"),
-        html.Div(f"Total P&L: ${total_pnl:.2f}"),
+        html.Div([
+            html.Span("Total Trades", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {total_trades}", style={"color": "#fff", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Wins", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {wins}", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Losses", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {losses}", style={"color": "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Open", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {open_trades}", style={"color": "#b0dfff", "fontWeight": "bold", "marginLeft": "8px"}),
+        ], style={"fontSize": "1.1rem", "marginBottom": "8px"}),
+        html.Div([
+            html.Span("Win Rate", style={"color": "#b0dfff"}),
+            html.Span(f" {win_rate:.1f}%", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Avg Win", style={"color": "#b0dfff"}),
+            html.Span(f" ${avg_win:.2f}", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Avg Loss", style={"color": "#b0dfff"}),
+            html.Span(f" ${avg_loss:.2f}", style={"color": "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Total P&L", style={"color": "#b0dfff"}),
+            html.Span(f" ${total_pnl:.2f}", style={"color": "#00FFCC" if total_pnl >= 0 else "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
+        ], style={"fontSize": "1.1rem"}),
     ]
 
 def pnl_over_time_figure(df: pd.DataFrame) -> go.Figure:
-    """Return a Plotly figure of cumulative P&L over time."""
+    """Return a Plotly figure of cumulative P&L over time (neon/dark theme)."""
     if df.empty:
         return go.Figure()
     df = df.sort_values("opened_at")
@@ -70,18 +88,43 @@ def pnl_over_time_figure(df: pd.DataFrame) -> go.Figure:
         x=df["opened_at"],
         y=df["cum_pnl"],
         mode="lines+markers",
-        name="Equity Curve"
+        name="Equity Curve",
+        line=dict(color="#1AA9E5", width=3),
+        marker=dict(color="#00FFCC", size=8, line=dict(width=2, color="#181C25")),
+        hoverlabel=dict(bgcolor="#23273A", font_size=14, font_family="Inter")
     ))
-    fig.update_layout(title="Cumulative P&L Over Time", xaxis_title="Date", yaxis_title="Cumulative P&L", template="plotly_white", height=300)
+    fig.update_layout(
+        title="Cumulative P&L Over Time",
+        xaxis_title="Date",
+        yaxis_title="Cumulative P&L",
+        template="plotly_white",
+        height=300,
+        plot_bgcolor="#23273A",
+        paper_bgcolor="#23273A",
+        font=dict(color="#F6F8FA", family="Inter,Roboto,Montserrat,sans-serif"),
+        xaxis=dict(color="#F6F8FA", gridcolor="#23273A"),
+        yaxis=dict(color="#F6F8FA", gridcolor="#23273A"),
+    )
     return fig
 
 def asset_allocation_figure(df: pd.DataFrame) -> go.Figure:
-    """Return a Plotly pie chart of asset allocation by asset_type."""
+    """Return a Plotly pie chart of asset allocation by asset_type (neon/dark theme)."""
     if df.empty:
         return go.Figure()
     asset_counts = df["asset_type"].value_counts()
-    fig = go.Figure(go.Pie(labels=asset_counts.index, values=asset_counts.values, hole=0.4))
-    fig.update_layout(title="Asset Allocation", height=300)
+    fig = go.Figure(go.Pie(
+        labels=asset_counts.index,
+        values=asset_counts.values,
+        hole=0.4,
+        marker=dict(colors=["#1AA9E5", "#00FFCC", "#23273A", "#b0dfff", "#FF4C6A"])
+    ))
+    fig.update_layout(
+        title="Asset Allocation",
+        height=300,
+        paper_bgcolor="#23273A",
+        font=dict(color="#F6F8FA", family="Inter,Roboto,Montserrat,sans-serif"),
+        legend=dict(font=dict(color="#F6F8FA")),
+    )
     return fig
 
 def stat_card(title: str, value: str) -> dbc.Card:
@@ -111,11 +154,13 @@ def tag_table(df: pd.DataFrame) -> dash_table.DataTable:
     return dash_table.DataTable(
         columns=[{"name": "Tag", "id": "tag"}, {"name": "Trades", "id": "trades"}, {"name": "PnL", "id": "pnl"}],
         data=tag_stats.to_dict("records"),
-        style_table={"overflowX": "auto", "background": "#181c24"},
-        style_cell={"background": "#181c24", "color": "#fff", "border": "none"},
-        style_header={"background": "#232837", "color": "#fff", "fontWeight": "bold"},
+        style_table={"overflowX": "auto", "background": "#23273A", "borderRadius": "16px"},
+        style_cell={"background": "#23273A", "color": "#F6F8FA", "border": "none", "fontSize": "1.05rem"},
+        style_header={"background": "#181C25", "color": "#00FFCC", "fontWeight": "bold", "borderBottom": "2px solid #00FFCC"},
         style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#232837"}
+            {"if": {"row_index": "odd"}, "backgroundColor": "#222436"},
+            {"if": {"column_id": "pnl", "filter_query": '{pnl} > 0'}, "color": "#00FFCC"},
+            {"if": {"column_id": "pnl", "filter_query": '{pnl} < 0'}, "color": "#FF4C6A"},
         ],
         page_size=10
     )
@@ -127,11 +172,13 @@ def symbol_table(df: pd.DataFrame) -> dash_table.DataTable:
     return dash_table.DataTable(
         columns=[{"name": "Symbol", "id": "asset_symbol"}, {"name": "Trades", "id": "trades"}, {"name": "PnL", "id": "pnl"}],
         data=sym_stats.to_dict("records"),
-        style_table={"overflowX": "auto", "background": "#181c24"},
-        style_cell={"background": "#181c24", "color": "#fff", "border": "none"},
-        style_header={"background": "#232837", "color": "#fff", "fontWeight": "bold"},
+        style_table={"overflowX": "auto", "background": "#23273A", "borderRadius": "16px"},
+        style_cell={"background": "#23273A", "color": "#F6F8FA", "border": "none", "fontSize": "1.05rem"},
+        style_header={"background": "#181C25", "color": "#00FFCC", "fontWeight": "bold", "borderBottom": "2px solid #00FFCC"},
         style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#232837"}
+            {"if": {"row_index": "odd"}, "backgroundColor": "#222436"},
+            {"if": {"column_id": "pnl", "filter_query": '{pnl} > 0'}, "color": "#00FFCC"},
+            {"if": {"column_id": "pnl", "filter_query": '{pnl} < 0'}, "color": "#FF4C6A"},
         ],
         page_size=10
     )
@@ -146,71 +193,36 @@ else:
     symbol_options = []
 
 # In the main layout, add the dropdowns to the right of the Trade Craft header
-layout = dbc.Container([
-    dbc.Row([
-        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
-        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
-    ], className="align-items-center mb-4 g-0"),
-    html.Div(filter_header(prefix="analytics-", show_add_trade=False), className="mb-2"),
-    dbc.Row([
-        # Add a row of labels for the stat cards
-        dbc.Col([
-            dbc.Row([
-                dbc.Col(html.Div("Win Rate", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Expectancy", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Profit Factor", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Avg Win Hold", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Avg Loss Hold", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Avg Loss", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Avg Win", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Win Streak", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Loss Streak", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Top Win", className="fw-bold text-center small mb-1")),
-                dbc.Col(html.Div("Top Loss", className="fw-bold text-center small mb-1")),
-            ], className="g-2 flex-nowrap", style={"flexWrap": "nowrap", "overflowX": "auto"}),
-        ], width=12),
-    ], className="mb-1"),
-    dbc.Row([
-        dbc.Col([
-            dbc.Row([
-                dbc.Col(stat_card("WIN RATE", "-"), id="stat-winrate"),
-                dbc.Col(stat_card("EXPECTANCY", "-"), id="stat-expectancy"),
-                dbc.Col(stat_card("PROFIT FACTOR", "-"), id="stat-profitfactor"),
-                dbc.Col(stat_card("AVG WIN HOLD", "-"), id="stat-avgwinhold"),
-                dbc.Col(stat_card("AVG LOSS HOLD", "-"), id="stat-avglosshold"),
-                dbc.Col(stat_card("AVG LOSS", "-"), id="stat-avgloss"),
-                dbc.Col(stat_card("AVG WIN", "-"), id="stat-avgwin"),
-                dbc.Col(stat_card("WIN STREAK", "-"), id="stat-winstreak"),
-                dbc.Col(stat_card("LOSS STREAK", "-"), id="stat-lossstreak"),
-                dbc.Col(stat_card("TOP WIN", "-"), id="stat-topwin"),
-                dbc.Col(stat_card("TOP LOSS", "-"), id="stat-toploss"),
-            ], className="g-2 flex-nowrap", style={"flexWrap": "nowrap", "overflowX": "auto"}),
-        ], width=12),
-    ], className="mb-3"),
-    dbc.Row([
-        dbc.Col([
-            dcc.Graph(id="analytics-pnl-curve", config={"displayModeBar": False}),
-        ], width=12),
-    ], className="mb-3"),
-    dbc.Row([
-        dbc.Col([
-            dcc.Graph(id="analytics-perf-dow", config={"displayModeBar": False}),
-        ], width=6),
-        dbc.Col([
-            dcc.Graph(id="analytics-perf-hour", config={"displayModeBar": False}),
-        ], width=6),
-    ], className="mb-3"),
-    dbc.Row([
-        dbc.Col([
-            html.H5("Tag Breakdown", className="text-light mt-2 mb-2"),
-            tag_table(pd.DataFrame()),
-        ], width=6),
-        dbc.Col([
-            html.H5("Symbol Breakdown", className="text-light mt-2 mb-2"),
-            symbol_table(pd.DataFrame()),
-        ], width=6),
-    ]),
-], fluid=True)
+# Modern Analytics Page Layout (neon/dark theme)
+layout = html.Div([
+    html.H2([
+        html.Span("Analytics", className="section-title"),
+        html.Span(" ", style={"marginLeft": "8px"}),
+        html.Span("📊", style={"fontSize": "2rem", "verticalAlign": "middle"})
+    ], style={"color": "#fff", "fontWeight": "bold", "marginBottom": "18px"}),
+    html.Div(user_account_dropdowns(), style={"marginBottom": "18px"}),
+    html.Div(filter_header(prefix="analytics", show_add_trade=False), className="filter-row", style={"marginBottom": "18px"}),
+    html.Div([
+        dcc.Graph(id="pnl-over-time", style={"background": "#23273A", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33", "padding": "12px"}),
+    ], className="card", style={"marginBottom": "24px"}),
+    html.Div([
+        html.Div(id="analytics-summary-stats", className="stats"),
+    ], className="card", style={"marginBottom": "24px"}),
+    html.Div([
+        html.Div([
+            html.H4("Asset Allocation", className="section-title", style={"fontSize": "1.3rem", "marginBottom": "12px"}),
+            dcc.Graph(id="asset-allocation-chart", style={"background": "#23273A", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33", "padding": "12px"}),
+        ], className="card", style={"marginBottom": "24px"}),
+        html.Div([
+            html.H4("PnL by Tag", className="section-title", style={"fontSize": "1.3rem", "marginBottom": "12px"}),
+            html.Div(id="tag-table-container"),
+        ], className="card", style={"marginBottom": "24px"}),
+        html.Div([
+            html.H4("PnL by Symbol", className="section-title", style={"fontSize": "1.3rem", "marginBottom": "12px"}),
+            html.Div(id="symbol-table-container"),
+        ], className="card", style={"marginBottom": "24px"}),
+    ], style={"display": "flex", "flexWrap": "wrap", "gap": "24px"}),
+])
 
 # Quick filter callback (sets date range based on which quickfilter button is pressed)
 @callback(

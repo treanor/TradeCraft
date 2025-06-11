@@ -1,0 +1,103 @@
+body {
+  background: #181C25;
+  color: #F6F8FA;
+  font-family: 'Inter', 'Roboto', 'Montserrat', sans-serif;
+}
+
+.header {
+  background: #181C25;
+  /* No background-image */
+  min-height: 80px;
+  box-shadow: 0 6px 24px #1aa9e540;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+}
+
+.header .app-name {
+  color: #fff;
+  font-size: 2.4rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-right: 48px;
+  text-shadow: 0 2px 16px #00FFCC80;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.header .nav-link {
+  color: #b0dfff;
+  margin: 0 18px;
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.header .nav-link:hover {
+  color: #00FFCC;
+  border-bottom: 2px solid #00FFCC;
+}
+
+.card, .filter-row, .stats {
+  background: #23273A;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px #00FFCC33;
+  padding: 18px;
+  margin-bottom: 24px;
+}
+
+.button-primary {
+  background: linear-gradient(90deg, #1AA9E5, #00FFCC);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 16px #1AA9E566;
+}
+.button-primary:hover {
+  background: #00FFCC;
+  box-shadow: 0 2px 32px #00FFCCCC;
+}
+
+.fab {
+  position: fixed;
+  bottom: 36px;
+  right: 36px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #1AA9E5, #00FFCC);
+  color: #fff;
+  font-size: 2.6rem;
+  font-weight: bold;
+  box-shadow: 0 4px 32px #00FFCC99;
+  border: none;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.fab:hover {
+  background: #00FFCC;
+  color: #181C25;
+  box-shadow: 0 6px 48px #00FFCCCC;
+}
+.section-title {
+  color: #00FFCC;
+  font-size: 2.2rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 16px #00FFCC80;
+}
+.stats {
+  background: #23273A;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px #1AA9E566;
+  padding: 18px;
+  margin-bottom: 0;
+}
+
+/* Remove candlestick watermark background from body */
+body::before {
+  content: none;
+}

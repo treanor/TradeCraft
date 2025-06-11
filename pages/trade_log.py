@@ -89,14 +89,72 @@ def get_trades_df(user_id: int, account_id: int, symbol: str = "", tag: str = ""
         df = df[df["date"] <= end]
     return df
 
-layout = dbc.Container([
-    dbc.Row([
-        dbc.Col(html.H2("Trade Craft", className="text-light"), width="auto"),
-        dbc.Col(user_account_dropdowns(), width="auto", style={"marginLeft": "auto"}),
-    ], className="align-items-center mb-4 g-0"),
-    html.Div(filter_header(prefix="", show_add_trade=True), className="mb-2"),  # Use the reusable filter_header component
-    # Remove any dbc.Row or code that creates a second set of quick filter buttons (Today, Yesterday, This Week, etc.) from the Trade Log layout. Only the filter_header should provide these buttons now.
-    # Add modal for manual trade entry (cleaned up, no target/stop-loss, improved spacing, date picker for legs)
+# Modern Trade Log Page Layout (neon/dark theme)
+layout = html.Div([
+    html.Div(
+        [
+            html.Div(user_account_dropdowns(), style={"marginRight": "18px", "maxWidth": "260px", "flex": "0 0 260px"}),
+            html.Div(filter_header(prefix="", show_add_trade=True), style={"maxWidth": "600px", "flex": "0 0 600px"}),
+            html.Div(id="trade-log-summary-stats", className="stats", style={"marginLeft": "auto", "maxWidth": "420px", "flex": "0 0 420px"}),
+        ],
+        className="d-flex align-items-start justify-content-between",
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "flex-start",
+            "justifyContent": "space-between",
+            "marginBottom": "18px",
+            "gap": "18px",
+            "width": "100%"
+        },
+    ),
+    html.Div([
+        dcc.Graph(id="equity-curve-chart", config={"displayModeBar": False}, style={"background": "#23273A", "borderRadius": "16px", "boxShadow": "0 2px 16px #00FFCC33", "padding": "12px"}),
+    ], className="card", style={"marginBottom": "24px"}),
+    html.Div([
+        dash_table.DataTable(
+            id="trade-table",
+            columns=[
+                {"name": "Date", "id": "date"},
+                {"name": "Symbol", "id": "symbol"},
+                {"name": "Status", "id": "status"},
+                {"name": "Quantity", "id": "quantity"},
+                {"name": "Entry Price", "id": "entry_price", "type": "numeric", "format": {"specifier": ".2f"}},
+                {"name": "Exit Price", "id": "exit_price", "type": "numeric", "format": {"specifier": ".2f"}},
+                {"name": "Hold Time", "id": "hold_time"},
+                {"name": "Return $", "id": "return_dollar", "type": "numeric", "format": {"specifier": ".2f"}},
+                {"name": "Return %", "id": "return_pct", "type": "numeric", "format": {"specifier": ".2f"}},
+                {"name": "Notes", "id": "notes_icon", "presentation": "markdown"},
+                {"name": "Tags", "id": "tags_icon", "presentation": "markdown"},
+            ],
+            data=get_trades_df(0, 0).to_dict("records"),
+            page_size=20,
+            style_table={"overflowX": "auto", "background": "#23273A", "borderRadius": "16px"},
+            style_cell={"textAlign": "left", "background": "#23273A", "color": "#F6F8FA", "border": "none", "fontSize": "1.05rem"},
+            style_header={"background": "#181C25", "color": "#00FFCC", "fontWeight": "bold", "borderBottom": "2px solid #00FFCC"},
+            style_data_conditional=[
+                {"if": {"row_index": "odd"}, "backgroundColor": "#222436"},
+                {"if": {"column_id": "status", "filter_query": '{status} = "Win"'}, "color": "#00FFCC"},
+                {"if": {"column_id": "status", "filter_query": '{status} = "Loss"'}, "color": "#FF4C6A"},
+                {"if": {"column_id": "status", "filter_query": '{status} = "Open"'}, "color": "#b0dfff"},
+                {"if": {"state": "selected"}, "backgroundColor": "#1AA9E5", "color": "#fff"},
+            ],
+            row_selectable="single",
+            selected_rows=[],
+            tooltip_data=[
+                {
+                    "notes_icon": row["notes"] if row["notes_icon"] else None,
+                    "tags_icon": row["tags"] if row["tags_icon"] else None
+                } for row in get_trades_df(0, 0).to_dict("records")
+            ],
+            tooltip_duration=None,
+            markdown_options={"link_target": None},
+        ),
+    ], className="card", style={"marginBottom": "24px"}),
+    dcc.Location(id="trade-log-navigate", refresh=True),
+    # Floating Action Button (FAB)
+    html.Button("+", id="add-trade-btn", className="fab", title="Add Trade"),
+    # Modal for adding trades (unchanged, still uses dbc.Modal)
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("Add New Trade")),
         dbc.ModalBody([
@@ -154,54 +212,19 @@ layout = dbc.Container([
             dbc.Button("Cancel", id="add-trade-cancel", color="secondary", style={"fontSize": "1.1rem", "padding": "8px 24px"}),
         ]),
     ], id="add-trade-modal", is_open=False, size="xl", style={"minWidth": "900px", "maxWidth": "1200px"}),
-    dbc.Row([
-        dbc.Col([
-            dcc.Graph(id="equity-curve-chart", config={"displayModeBar": False}),
-        ], width=8),
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Summary Stats"),
-                dbc.CardBody([
-                    html.Div(id="trade-log-summary-stats")
-                ]),
-            ]),
-        ], width=4),
-    ], className="mb-4"),
-    dash_table.DataTable(
-        id="trade-table",
-        columns=[
-            {"name": "Date", "id": "date"},
-            {"name": "Symbol", "id": "symbol"},
-            {"name": "Status", "id": "status"},
-            {"name": "Quantity", "id": "quantity"},
-            {"name": "Entry Price", "id": "entry_price", "type": "numeric", "format": {"specifier": ".2f"}},
-            {"name": "Exit Price", "id": "exit_price", "type": "numeric", "format": {"specifier": ".2f"}},
-            {"name": "Entry Total", "id": "entry_total", "type": "numeric", "format": {"specifier": ".2f"}},
-            {"name": "Exit Total", "id": "exit_total", "type": "numeric", "format": {"specifier": ".2f"}},
-            {"name": "Hold Time", "id": "hold_time"},
-            {"name": "Return $", "id": "return_dollar", "type": "numeric", "format": {"specifier": ".2f"}},
-            {"name": "Return %", "id": "return_pct", "type": "numeric", "format": {"specifier": ".2f"}},
-            {"name": "Notes", "id": "notes_icon", "presentation": "markdown"},
-            {"name": "Tags", "id": "tags_icon", "presentation": "markdown"},
-        ],
-        data=get_trades_df(0, 0).to_dict("records"),
-        page_size=20,
-        style_table={"overflowX": "auto"},
-        style_cell={"textAlign": "left"},
-        row_selectable="single",
-        selected_rows=[],
-        tooltip_data=[
-            {
-                "notes_icon": row["notes"] if row["notes_icon"] else None,
-                "tags_icon": row["tags"] if row["tags_icon"] else None
-            } for row in get_trades_df(0, 0).to_dict("records")
-        ],
-        tooltip_duration=None,
-        # Remove clickability: icons are just static markdown, not links
-        markdown_options={"link_target": None},
-    ),
+    # Remove the duplicate DataTable for the trade log table below. Only keep one instance.
+    # The following block is the duplicate and should be removed:
+    # dash_table.DataTable(
+    #     id="trade-table",
+    #     columns=[ ... ],
+    #     ...
+    # )
     dcc.Location(id="trade-log-navigate", refresh=True),
-], fluid=True)
+    # Floating Action Button (FAB)
+    html.Button("+", id="add-trade-btn", className="fab", title="Add Trade"),
+],  # end children
+# fluid=True removed (not valid for html.Div)
+)
 
 @callback(
     Output("trade-table", "data"),
@@ -332,15 +355,54 @@ def update_equity_and_stats(table_data: list[dict], start_date: str, end_date: s
         df_grouped["cum_pnl"] = df_grouped["return_dollar"].fillna(0).cumsum()
         x = df_grouped["date"]
         y = df_grouped["cum_pnl"]
-    fig = go.Figure(go.Scatter(x=x, y=y, mode="lines+markers", name="Equity Curve"))
+    fig = go.Figure(go.Scatter(
+        x=x, y=y, mode="lines+markers", name="Equity Curve",
+        line=dict(color="#1AA9E5", width=3),
+        marker=dict(color="#00FFCC", size=8, line=dict(width=2, color="#181C25")),
+        hoverlabel=dict(bgcolor="#23273A", font_size=14, font_family="Inter")
+    ))
     fig.update_layout(
         title="Equity Curve",
         xaxis_title="Date/Hour" if group_by == "hour" else "Date",
         yaxis_title="Cumulative P&L ($)",
         height=250,
         margin=dict(l=0, r=0, t=30, b=0),
-        template="plotly_white"
+        template="plotly_white",
+        plot_bgcolor="#23273A",
+        paper_bgcolor="#23273A",
+        font=dict(color="#F6F8FA", family="Inter,Roboto,Montserrat,sans-serif"),
+        xaxis=dict(color="#F6F8FA", gridcolor="#23273A"),
+        yaxis=dict(color="#F6F8FA", gridcolor="#23273A"),
     )
+    # Stats (unchanged)
+    wins = df[(df["status"] == "Win") & df["return_dollar"].notnull()]
+    losses = df[(df["status"] == "Loss") & df["return_dollar"].notnull()]
+    open_trades = df[df["status"] == "Open"]
+    avg_win = wins["return_dollar"].mean() if not wins.empty else 0.0
+    avg_loss = losses["return_dollar"].mean() if not losses.empty else 0.0
+    total_pnl = df["return_dollar"].sum(skipna=True)
+    stats = html.Div([
+        html.Div([
+            html.Span("Wins", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {len(wins)}", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Losses", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {len(losses)}", style={"color": "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Open", style={"color": "#b0dfff", "fontWeight": "bold"}),
+            html.Span(f" {len(open_trades)}", style={"color": "#b0dfff", "fontWeight": "bold", "marginLeft": "8px"}),
+        ], style={"fontSize": "1.1rem", "marginBottom": "8px"}),
+        html.Div([
+            html.Span("Avg Win", style={"color": "#b0dfff"}),
+            html.Span(f" ${avg_win:.2f}", style={"color": "#00FFCC", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Avg Loss", style={"color": "#b0dfff"}),
+            html.Span(f" ${avg_loss:.2f}", style={"color": "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
+            html.Span("  |  "),
+            html.Span("Total P&L", style={"color": "#b0dfff"}),
+            html.Span(f" ${total_pnl:.2f}", style={"color": "#00FFCC" if total_pnl >= 0 else "#FF4C6A", "fontWeight": "bold", "marginLeft": "8px"}),
+        ], style={"fontSize": "1.1rem"}),
+    ], className="stats")
     # Stats (unchanged)
     wins = df[(df["status"] == "Win") & df["return_dollar"].notnull()]
     losses = df[(df["status"] == "Loss") & df["return_dollar"].notnull()]

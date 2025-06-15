@@ -11,7 +11,7 @@ def test_trade_analytics():
     assert isinstance(analytics, dict)
     assert "realized_pnl" in analytics
     assert "status" in analytics
-    assert analytics["status"] in ("open", "closed")
+    assert analytics["status"] in ("OPEN", "WIN", "LOSS", "BREAK-EVEN")
     assert "total_fees" in analytics
     assert analytics["total_fees"] >= 0
 

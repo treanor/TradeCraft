@@ -8,14 +8,17 @@ import dash_bootstrap_components as dbc
 from utils import db_access
 import pandas as pd
 from components.filters import user_account_dropdowns
+from typing import List, Dict, Any, Tuple, Optional
+from config import get_default_user
 
 # Register this as a Dash page
 # URL: /trade_detail/<trade_id>
 dash.register_page(__name__, path_template="/trade_detail/<trade_id>", name="Trade Detail")
 
-USERNAME = "alice"  # For now, single-user mode
+USERNAME = get_default_user()  # Get from configuration instead of hardcoding
 
-def get_trade_detail(trade_id: int, user_id: int, account_id: int):
+def get_trade_detail(trade_id: int, user_id: int, account_id: int) -> Tuple[Optional[Dict[str, Any]], Optional[List[Dict[str, Any]]], Optional[Dict[str, Any]]]:
+    """Get trade details including legs and analytics."""
     trades = db_access.fetch_trades_for_user_and_account(user_id, account_id)
     trade = next((t for t in trades if t["id"] == trade_id), None)
     if not trade:
@@ -36,10 +39,11 @@ layout = dbc.Container([
 @callback(
     Output("trade-detail-content", "children"),
     [Input("trade-detail-url", "pathname"),
-     Input("user-dropdown", "value"),
+     Input("user-store", "data"),
      Input("account-dropdown", "value")],
 )
-def render_trade_detail(pathname, user_id, account_id):
+def render_trade_detail(pathname: str, user_id: int, account_id: int) -> Any:
+    """Render trade detail content based on URL parameters."""
     import re
     m = re.match(r"/trade_detail/(\d+)", pathname or "")
     if not m:

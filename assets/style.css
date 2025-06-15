@@ -132,6 +132,16 @@ body {
   letter-spacing: 1px;
   text-shadow: 0 2px 16px #00FFCC40;
 }
+.stats-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+.stats-row .stat-card {
+  flex: 1;
+  margin-bottom: 0;
+}
 
 /* Remove candlestick watermark background from body */
 body::before {

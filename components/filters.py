@@ -66,50 +66,71 @@ def filter_header(
     show_add_trade: bool = False
 ) -> html.Div:
     """
-    Returns a filter/header bar Div with symbol filter, tag filter, date picker, clear button, quick filter buttons, and optional Add Trade button.
-    prefix: Optional string to prefix component IDs for uniqueness per page.
+    Returns a filter header for the sidebar - based on the original filter_bar pattern.
+    Just adds account selection and arranges vertically for sidebar layout.
     """
-    # Fetch options from DB for dropdowns
     symbol_options = db_access.get_all_symbols()
     tag_options = db_access.get_all_tags()
+    
     return html.Div([
+        # Account selection (added back)
         dbc.Row([
             dbc.Col([
+                html.Label("Account:", className="form-label"),
                 dcc.Dropdown(
-                    id=f"{prefix}symbol-filter",
-                    options=[{"label": s, "value": s} for s in symbol_options],
-                    placeholder=symbol_placeholder,
-                    multi=False,
-                    searchable=True,
+                    id=f"{prefix}account-dropdown",
+                    options=[],  # Will be populated by callback
+                    placeholder="Select Account",
                     clearable=True,
-                    style={"width": "100%"},
-                ),
-            ], width=3),
+                    className="mb-2"
+                )
+            ], width=12),
+        ]),
+        
+        # Date range picker
+        dbc.Row([
             dbc.Col([
-                dcc.Dropdown(
-                    id=f"{prefix}tag-filter",
-                    options=[{"label": t, "value": t} for t in tag_options],
-                    placeholder=tag_placeholder,
-                    multi=False,
-                    searchable=True,
-                    clearable=True,
-                    style={"width": "100%"},
-                ),
-            ], width=3),
-            dbc.Col([
+                html.Label("Date Range:", className="form-label"),
                 dcc.DatePickerRange(
                     id=f"{prefix}date-filter",
                     start_date_placeholder_text="Start Date",
                     end_date_placeholder_text="End Date",
-                    display_format="YYYY-MM-DD"
-                ),
-            ], width=4),
-            dbc.Col([
-                dbc.Button("Clear Filters", id=f"{prefix}clear-filters", color="secondary", outline=True, className="me-2"),
-            ], width=2),
-        ], className="mb-3"),
+                    display_format="YYYY-MM-DD",
+                    className="mb-2"
+                )
+            ], width=12),
+        ]),
+        
+        # Tag and Symbol dropdowns side by side
         dbc.Row([
             dbc.Col([
+                html.Label("Tags:", className="form-label"),
+                dcc.Dropdown(
+                    id=f"{prefix}tag-filter",
+                    options=[{"label": t, "value": t} for t in tag_options],
+                    placeholder="Tag",
+                    multi=True,
+                    clearable=True,
+                    className="mb-2"
+                )
+            ], width=6),
+            dbc.Col([
+                html.Label("Symbol:", className="form-label"),
+                dcc.Dropdown(
+                    id=f"{prefix}symbol-filter",
+                    options=[{"label": s, "value": s} for s in symbol_options],
+                    placeholder="Symbol",
+                    multi=True,
+                    clearable=True,
+                    className="mb-2"
+                )
+            ], width=6),
+        ]),
+        
+        # Quick filter buttons (your original set)
+        dbc.Row([
+            dbc.Col([
+                html.Label("Quick Filters:", className="form-label"),
                 dbc.ButtonGroup([
                     dbc.Button("Today", id=f"{prefix}quickfilter-today", color="primary", outline=True, size="sm"),
                     dbc.Button("Yesterday", id=f"{prefix}quickfilter-yesterday", color="primary", outline=True, size="sm"),
@@ -118,12 +139,19 @@ def filter_header(
                     dbc.Button("This Month", id=f"{prefix}quickfilter-thismonth", color="primary", outline=True, size="sm"),
                     dbc.Button("Last Month", id=f"{prefix}quickfilter-lastmonth", color="primary", outline=True, size="sm"),
                     dbc.Button("All Time", id=f"{prefix}quickfilter-alltime", color="primary", outline=True, size="sm"),
-                ], size="sm", className="mb-2"),
-            ], width=10),
-            dbc.Col([
-                dbc.Button("Add Trade", id=f"{prefix}add-trade-btn", color="success", outline=False, className="mb-2", n_clicks=0) if show_add_trade else None,
-            ], width=2, className="d-flex align-items-end justify-content-end"),
+                ], size="sm", className="d-flex flex-wrap gap-1"),
+            ], width=12),
         ], className="mb-2"),
+        
+        # Clear filters button
+        dbc.Row([
+            dbc.Col([
+                dbc.Button("Clear Filters", id=f"{prefix}clear-filters", color="secondary", outline=True, size="sm", className="w-100")
+            ], width=12),
+        ], className="mb-2"),
+        
+        # Stores
+        dcc.Store(id="account-store", storage_type="local"),
     ])
 
 def get_persistent_account() -> int | None:
@@ -148,6 +176,8 @@ def user_account_dropdowns() -> html.Div:
         dcc.Store(id="account-store", storage_type="local"),
     ], className="g-1 align-items-center", style={"marginLeft": 16})
 
+
+
 @callback(
     Output("account-dropdown", "options"),
     Output("account-dropdown", "value"),
@@ -156,18 +186,10 @@ def user_account_dropdowns() -> html.Div:
     Input("account-dropdown", "value"),
     State("account-store", "data"),
 )
-def update_account_dropdown(user_id: int, account_id: int, store_account: int):
-    """Update account dropdown options and value when user or account changes. Persist selection. Defaults to alice_acct1 if no selection."""
+def update_account_dropdown(user_id: int, account_id: int, store_account: int) -> tuple[list[dict], int | None, int | None]:
+    """Update account dropdown options and value when user or account changes. Persist selection. Defaults to first account if no selection."""
     accounts = db_access.get_accounts_for_user(user_id) if user_id else []
     options = [{"label": f"{a['name']} ({a['broker']})" if a['broker'] else a['name'], "value": a["id"]} for a in accounts]
-    # Default to alice_acct1 if nothing is selected
-    default_value = None
-    if options:
-        for a in accounts:
-            if a["name"] == "alice_acct1":
-                default_value = a["id"]
-                break
-        if not default_value:
-            default_value = options[0]["value"]
+    default_value = options[0]["value"] if options else None
     value = account_id or store_account or default_value
     return options, value, value

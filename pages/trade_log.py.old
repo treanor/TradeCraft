@@ -11,8 +11,11 @@ The functionality is now organized as follows:
 This follows MVVM architecture pattern with proper separation of concerns.
 """
 
-# Import the new modular implementation
-from .trade_log import layout
+# Import the layout from the trade_log subfolder's __init__.py
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+from trade_log import layout
 import dash
 
 # Register this as a Dash page

@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 import calendar
 
+# Import authentication module
+from auth import require_auth, get_current_user, get_user_accounts
+
 # Configure page
 st.set_page_config(
     page_title="TradeCraft Trading Journal",
@@ -66,8 +69,15 @@ def get_db_connection(db_path: str = "data/tradecraft.db"):
     return sqlite3.connect(db_path, check_same_thread=False)
 
 @st.cache_data(ttl=60)
-def load_trades(user_id: int = 3, account_id: Optional[int] = None) -> pd.DataFrame:
+def load_trades(user_id: Optional[int] = None, account_id: Optional[int] = None) -> pd.DataFrame:
     """Load trades from database with P&L calculations."""
+    # Get current user if not provided
+    if user_id is None:
+        current_user = get_current_user()
+        if not current_user:
+            return pd.DataFrame()
+        user_id = current_user['id']
+    
     try:
         conn = sqlite3.connect("data/tradecraft.db")
         
@@ -139,12 +149,14 @@ def load_trades(user_id: int = 3, account_id: Optional[int] = None) -> pd.DataFr
 
 @st.cache_data(ttl=60)
 def load_accounts() -> pd.DataFrame:
-    """Load available accounts."""
+    """Load available accounts for current user."""
+    current_user = get_current_user()
+    if not current_user:
+        return pd.DataFrame()
+    
     try:
-        conn = sqlite3.connect("data/tradecraft.db")
-        df = pd.read_sql_query("SELECT id, name FROM accounts ORDER BY name", conn)
-        conn.close()
-        return df
+        accounts = get_user_accounts(current_user['id'])
+        return pd.DataFrame(accounts)
     except Exception as e:
         st.error(f"Error loading accounts: {e}")
         return pd.DataFrame()
@@ -638,6 +650,7 @@ def render_calendar(calendar_data: Dict[str, Any]) -> None:
         # Add spacing between weeks
         st.markdown("<br>", unsafe_allow_html=True)
 
+@require_auth
 def main():
     """Main Streamlit application."""
     
@@ -648,9 +661,8 @@ def main():
         <p style="margin: 0; opacity: 0.9;">Simple. Clean. Effective.</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Add a refresh button and data info
-    col1, col2, col3 = st.columns([1, 1, 2])
+      # Add a refresh button and data info
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         if st.button("🔄 Refresh Data", help="Clear cache and reload data"):
             st.cache_data.clear()
@@ -660,6 +672,10 @@ def main():
         if st.button("📊 Toggle Stats", help="Show/hide summary statistics"):
             st.session_state.show_summary = not st.session_state.get('show_summary', True)
     
+    with col3:
+        if st.button("➕ Add Trade", help="Add a new trade"):
+            st.session_state.show_add_form = not st.session_state.get('show_add_form', False)
+    
     # Initialize session state
     if 'show_summary' not in st.session_state:
         st.session_state.show_summary = True
@@ -667,8 +683,7 @@ def main():
     # Sidebar filters
     st.sidebar.markdown("### 🔍 Filters")
     st.sidebar.markdown("---")
-    
-    # Load accounts
+      # Load accounts for current user
     accounts_df = load_accounts()
     if not accounts_df.empty:
         account_options = {f"{row['name']} (ID: {row['id']})": row['id'] 
@@ -676,15 +691,38 @@ def main():
         selected_account_display = st.sidebar.selectbox("Account", list(account_options.keys()))
         selected_account = account_options[selected_account_display]
     else:
-        st.sidebar.warning("No accounts found")
-        selected_account = None
+        st.sidebar.warning("No accounts found for your user")
+        selected_account = None    # Load trades for current user
+    trades_df = load_trades(account_id=selected_account)
     
-    # Load trades
-    trades_df = load_trades(user_id=3, account_id=selected_account)
+    current_user = get_current_user()
+    is_demo_user = current_user and current_user['username'] in ['alice', 'bob']
     
-    if trades_df.empty:
-        st.warning("No trades found. Add some trades to your database to get started!")
-        st.stop()    # Get filter options
+    if trades_df.empty and not is_demo_user:
+        if selected_account:
+            # Show trade entry form for non-demo users with no trades
+            show_add_trade_form(selected_account)
+            
+            # Also show some helpful info
+            st.markdown("---")
+            st.markdown("### 💡 Getting Started Tips")
+            st.info("""
+            **Welcome to TradeCraft!** Here are some tips to get you started:
+            
+            1. **Add trades manually** using the form above
+            2. **Import from CSV** (feature coming soon)
+            3. **Use demo accounts** (alice/bob) to see sample data
+            4. **Explore analytics** once you have some trades
+            """)
+        else:
+            st.warning("Please select an account to add trades.")
+        st.stop()
+    elif trades_df.empty and is_demo_user:
+        # Demo users should see a message that sample data is loading
+        st.info("Loading sample data for demo account...")
+        st.stop()
+    
+    # Get filter options
     all_symbols = get_unique_symbols(trades_df)
     all_tags = get_unique_tags(trades_df)
     
@@ -718,9 +756,14 @@ def main():
         selected_tags = st.sidebar.multiselect("Tags", all_tags, default=[])
     else:
         selected_tags = []
-    
-    # Apply filters
+      # Apply filters
     filtered_df = filter_trades(trades_df, selected_symbols, selected_tags, start_date, end_date)
+    
+    # Show add trade form if requested
+    if st.session_state.get('show_add_form', False) and selected_account:
+        st.markdown("---")
+        show_add_trade_form(selected_account)
+        st.markdown("---")
     
     # Main content
     if filtered_df.empty:
@@ -1705,6 +1748,81 @@ def main():
     st.sidebar.metric("Total Trades", len(trades_df))
     st.sidebar.metric("Filtered Trades", len(filtered_df))
     st.sidebar.metric("Date Range", f"{(end_date - start_date).days} days")
+
+def show_add_trade_form(account_id: int):
+    """Show form to add a new trade."""
+    st.markdown("### 🚀 Add Your First Trade!")
+    st.markdown("Let's get started by adding a trade to your journal.")
+    
+    with st.form("add_trade_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            symbol = st.text_input("Symbol", placeholder="e.g., AAPL, TSLA", help="Stock symbol or ticker")
+            asset_type = st.selectbox("Asset Type", 
+                                    ["stock", "option", "crypto", "forex", "future", "other"])
+            action = st.selectbox("Action", 
+                                ["buy", "sell", "buy to open", "sell to close", "buy to close", "sell to open"])
+            quantity = st.number_input("Quantity", min_value=1, value=100, step=1)
+        
+        with col2:
+            price = st.number_input("Price", min_value=0.01, value=100.0, step=0.01, format="%.2f")
+            fees = st.number_input("Fees", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+            trade_date = st.date_input("Trade Date", value=datetime.now().date())
+            notes = st.text_area("Notes", placeholder="Optional notes about this trade")
+        
+        # Tags
+        tags = st.text_input("Tags", placeholder="e.g., momentum, earnings, swing (comma-separated)")
+        
+        submitted = st.form_submit_button("🎯 Add Trade", use_container_width=True)
+        
+        if submitted:
+            if not symbol:
+                st.error("Please enter a symbol")
+                return False
+            
+            try:
+                # Import the trade insertion function
+                import sys
+                sys.path.append('.')
+                from utils.db_access import insert_trade, insert_trade_leg
+                
+                current_user = get_current_user()
+                
+                # Create the trade
+                trade_date_str = datetime.combine(trade_date, datetime.now().time()).isoformat()
+                trade_id = insert_trade(
+                    user_id=current_user['id'],
+                    account_id=account_id,
+                    asset_symbol=symbol.upper(),
+                    asset_type=asset_type,
+                    opened_at=trade_date_str,
+                    notes=notes,
+                    tags=tags
+                )
+                
+                # Add the trade leg
+                leg_id = insert_trade_leg(
+                    trade_id=trade_id,
+                    action=action,
+                    quantity=quantity,
+                    price=price,
+                    fees=fees,
+                    executed_at=trade_date_str,
+                    notes=f"{action} {quantity} shares at ${price}"
+                )
+                
+                st.success(f"✅ Trade added successfully! Trade ID: {trade_id}")
+                st.balloons()                
+                # Clear cache and rerun to show the new trade
+                st.cache_data.clear()
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Error adding trade: {e}")
+                return False
+    
+    return True
 
 if __name__ == "__main__":
     main()

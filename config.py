@@ -24,7 +24,6 @@ DEBUG_MODE = os.getenv("DEBUG", "True").lower() == "true"
 
 # UI configuration
 APP_TITLE = os.getenv("APP_TITLE", "TradeCraft Trading Journal")
-LOGO_PATH = os.getenv("LOGO_PATH", "/assets/tradecraftlogobanner.png")
 
 def get_db_path() -> Path:
     """Get the database path from configuration."""

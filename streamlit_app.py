@@ -15,8 +15,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 import calendar
 
-# Import authentication module
-from auth import require_auth, get_current_user, get_user_accounts
+# Authentication removed for personal use
 
 # Configure page
 st.set_page_config(
@@ -69,26 +68,16 @@ def get_db_connection(db_path: str = "data/tradecraft.db"):
     return sqlite3.connect(db_path, check_same_thread=False)
 
 @st.cache_data(ttl=60)
-def load_trades(user_id: Optional[int] = None, account_id: Optional[int] = None) -> pd.DataFrame:
+def load_trades(account_id: Optional[int] = None) -> pd.DataFrame:
     """Load trades from database with P&L calculations."""
-    # Get current user if not provided
-    if user_id is None:
-        current_user = get_current_user()
-        if not current_user:
-            return pd.DataFrame()
-        user_id = current_user['id']
-    
     try:
         conn = sqlite3.connect("data/tradecraft.db")
         
-        query = """
-        SELECT * FROM trades 
-        WHERE user_id = ?
-        """
-        params = [user_id]
+        query = "SELECT * FROM trades"
+        params = []
         
         if account_id:
-            query += " AND account_id = ?"
+            query += " WHERE account_id = ?"
             params.append(account_id)
         
         query += " ORDER BY opened_at DESC"
@@ -149,14 +138,12 @@ def load_trades(user_id: Optional[int] = None, account_id: Optional[int] = None)
 
 @st.cache_data(ttl=60)
 def load_accounts() -> pd.DataFrame:
-    """Load available accounts for current user."""
-    current_user = get_current_user()
-    if not current_user:
-        return pd.DataFrame()
-    
+    """Load all available accounts."""
     try:
-        accounts = get_user_accounts(current_user['id'])
-        return pd.DataFrame(accounts)
+        conn = sqlite3.connect("data/tradecraft.db")
+        df = pd.read_sql_query("SELECT * FROM accounts ORDER BY name", conn)
+        conn.close()
+        return df
     except Exception as e:
         st.error(f"Error loading accounts: {e}")
         return pd.DataFrame()
@@ -646,11 +633,9 @@ def render_calendar(calendar_data: Dict[str, Any]) -> None:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-        
-        # Add spacing between weeks
+          # Add spacing between weeks
         st.markdown("<br>", unsafe_allow_html=True)
 
-@require_auth
 def main():
     """Main Streamlit application."""
     
@@ -679,11 +664,11 @@ def main():
     # Initialize session state
     if 'show_summary' not in st.session_state:
         st.session_state.show_summary = True
-    
-    # Sidebar filters
+      # Sidebar filters
     st.sidebar.markdown("### 🔍 Filters")
     st.sidebar.markdown("---")
-      # Load accounts for current user
+    
+    # Load accounts for current user
     accounts_df = load_accounts()
     if not accounts_df.empty:
         account_options = {f"{row['name']} (ID: {row['id']})": row['id'] 
@@ -691,16 +676,16 @@ def main():
         selected_account_display = st.sidebar.selectbox("Account", list(account_options.keys()))
         selected_account = account_options[selected_account_display]
     else:
-        st.sidebar.warning("No accounts found for your user")
-        selected_account = None    # Load trades for current user
+        st.sidebar.warning("No accounts found")
+        selected_account = None
+        
+    # Load trades for current user
     trades_df = load_trades(account_id=selected_account)
     
-    current_user = get_current_user()
-    is_demo_user = current_user and current_user['username'] in ['alice', 'bob']
-    
-    if trades_df.empty and not is_demo_user:
+    # For personal use, always show the add trade form if no trades exist
+    if trades_df.empty:
         if selected_account:
-            # Show trade entry form for non-demo users with no trades
+            # Show trade entry form when no trades exist
             show_add_trade_form(selected_account)
             
             # Also show some helpful info
@@ -711,52 +696,140 @@ def main():
             
             1. **Add trades manually** using the form above
             2. **Import from CSV** (feature coming soon)
-            3. **Use demo accounts** (alice/bob) to see sample data
-            4. **Explore analytics** once you have some trades
+            3. **Use demo accounts** (alice/bob) to see sample data            4. **Explore analytics** once you have some trades
             """)
         else:
             st.warning("Please select an account to add trades.")
-        st.stop()
-    elif trades_df.empty and is_demo_user:
-        # Demo users should see a message that sample data is loading
-        st.info("Loading sample data for demo account...")
         st.stop()
     
     # Get filter options
     all_symbols = get_unique_symbols(trades_df)
     all_tags = get_unique_tags(trades_df)
     
-    # Date range filter
-    min_date = trades_df['opened_at'].min().date() if 'opened_at' in trades_df.columns else datetime.now().date()
-    max_date = trades_df['opened_at'].max().date() if 'opened_at' in trades_df.columns else datetime.now().date()
+    # Quick date filters
+    st.sidebar.markdown("### 📅 Quick Dates")
     
-    date_range = st.sidebar.date_input(
-        "Date Range",
-        value=(min_date, max_date),
-        min_value=min_date,
-        max_value=max_date
-    )
+    col1, col2 = st.sidebar.columns(2)
     
-    if len(date_range) == 2:
-        start_date, end_date = date_range
-        start_date = datetime.combine(start_date, datetime.min.time())
-        end_date = datetime.combine(end_date, datetime.max.time())
+    with col1:
+        if st.button("Today", key="today"):
+            st.session_state.date_filter = "today"
+        if st.button("This Week", key="this_week"):
+            st.session_state.date_filter = "this_week"
+        if st.button("This Month", key="this_month"):
+            st.session_state.date_filter = "this_month"
+        if st.button("This Year", key="this_year"):
+            st.session_state.date_filter = "this_year"
+    
+    with col2:
+        if st.button("Yesterday", key="yesterday"):
+            st.session_state.date_filter = "yesterday"
+        if st.button("Last Week", key="last_week"):
+            st.session_state.date_filter = "last_week"
+        if st.button("Last Month", key="last_month"):
+            st.session_state.date_filter = "last_month"
+        if st.button("Last Year", key="last_year"):
+            st.session_state.date_filter = "last_year"
+    
+    if st.sidebar.button("All Time", key="all_time"):
+        st.session_state.date_filter = "all_time"
+    
+    # Calculate date range based on quick filter
+    today = datetime.now().date()
+    
+    if st.session_state.get('date_filter') == "today":
+        start_date = datetime.combine(today, datetime.min.time())
+        end_date = datetime.combine(today, datetime.max.time())
+    elif st.session_state.get('date_filter') == "yesterday":
+        yesterday = today - timedelta(days=1)
+        start_date = datetime.combine(yesterday, datetime.min.time())
+        end_date = datetime.combine(yesterday, datetime.max.time())
+    elif st.session_state.get('date_filter') == "this_week":
+        start_of_week = today - timedelta(days=today.weekday())
+        start_date = datetime.combine(start_of_week, datetime.min.time())
+        end_date = datetime.combine(today, datetime.max.time())
+    elif st.session_state.get('date_filter') == "last_week":
+        start_of_last_week = today - timedelta(days=today.weekday() + 7)
+        end_of_last_week = start_of_last_week + timedelta(days=6)
+        start_date = datetime.combine(start_of_last_week, datetime.min.time())
+        end_date = datetime.combine(end_of_last_week, datetime.max.time())
+    elif st.session_state.get('date_filter') == "this_month":
+        start_of_month = today.replace(day=1)
+        start_date = datetime.combine(start_of_month, datetime.min.time())
+        end_date = datetime.combine(today, datetime.max.time())
+    elif st.session_state.get('date_filter') == "last_month":
+        first_of_this_month = today.replace(day=1)
+        last_month = first_of_this_month - timedelta(days=1)
+        start_of_last_month = last_month.replace(day=1)
+        start_date = datetime.combine(start_of_last_month, datetime.min.time())
+        end_date = datetime.combine(last_month, datetime.max.time())
+    elif st.session_state.get('date_filter') == "this_year":
+        start_of_year = today.replace(month=1, day=1)
+        start_date = datetime.combine(start_of_year, datetime.min.time())
+        end_date = datetime.combine(today, datetime.max.time())
+    elif st.session_state.get('date_filter') == "last_year":
+        start_of_last_year = today.replace(year=today.year-1, month=1, day=1)
+        end_of_last_year = today.replace(year=today.year-1, month=12, day=31)
+        start_date = datetime.combine(start_of_last_year, datetime.min.time())
+        end_date = datetime.combine(end_of_last_year, datetime.max.time())
     else:
-        start_date = datetime.combine(date_range[0], datetime.min.time())
-        end_date = datetime.combine(date_range[0], datetime.max.time())
+        # Default to full date range or custom date picker
+        min_date = trades_df['opened_at'].min().date() if 'opened_at' in trades_df.columns else today
+        max_date = trades_df['opened_at'].max().date() if 'opened_at' in trades_df.columns else today
+        
+        st.sidebar.markdown("### 📅 Custom Date Range")
+        date_range = st.sidebar.date_input(
+            "Date Range",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date
+        )
+        
+        if len(date_range) == 2:
+            start_date, end_date = date_range
+            start_date = datetime.combine(start_date, datetime.min.time())
+            end_date = datetime.combine(end_date, datetime.max.time())
+        else:
+            start_date = datetime.combine(date_range[0], datetime.min.time())
+            end_date = datetime.combine(date_range[0], datetime.max.time())
+    
+    st.sidebar.markdown("---")
     
     # Symbol filter
+    st.sidebar.markdown("### 📊 Filters")
     if all_symbols:
-        selected_symbols = st.sidebar.multiselect("Symbols", all_symbols, default=[])
+        selected_symbols = st.sidebar.multiselect("Symbols", all_symbols, default=[], key="symbol_filter")
     else:
         selected_symbols = []
     
-    # Tag filter
+    # Tag filter (only show if tags exist)
     if all_tags:
-        selected_tags = st.sidebar.multiselect("Tags", all_tags, default=[])
+        selected_tags = st.sidebar.multiselect("Tags", all_tags, default=[], key="tag_filter")
     else:
         selected_tags = []
-      # Apply filters
+        st.sidebar.info("💡 No tags found. Add tags to your trades to enable tag filtering.")
+    
+    # Show active filters
+    active_filters = []
+    if st.session_state.get('date_filter'):
+        active_filters.append(f"📅 {st.session_state.date_filter.replace('_', ' ').title()}")
+    if selected_symbols:
+        active_filters.append(f"🎯 {len(selected_symbols)} symbol(s)")
+    if selected_tags:
+        active_filters.append(f"🏷️ {len(selected_tags)} tag(s)")
+    
+    if active_filters:
+        st.sidebar.markdown("### 🎯 Active Filters")
+        for filter_name in active_filters:
+            st.sidebar.markdown(f"• {filter_name}")
+        
+        if st.sidebar.button("🗑️ Clear All Filters"):
+            st.session_state.date_filter = None
+            st.session_state.symbol_filter = []
+            st.session_state.tag_filter = []
+            st.rerun()
+    
+    # Apply filters
     filtered_df = filter_trades(trades_df, selected_symbols, selected_tags, start_date, end_date)
     
     # Show add trade form if requested
@@ -1781,18 +1854,18 @@ def show_add_trade_form(account_id: int):
                 st.error("Please enter a symbol")
                 return False
             
-            try:
-                # Import the trade insertion function
+            try:                # Import the trade insertion function
                 import sys
                 sys.path.append('.')
                 from utils.db_access import insert_trade, insert_trade_leg
                 
-                current_user = get_current_user()
+                # For personal use, use default user ID
+                default_user_id = 13  # Using existing user from database
                 
                 # Create the trade
                 trade_date_str = datetime.combine(trade_date, datetime.now().time()).isoformat()
                 trade_id = insert_trade(
-                    user_id=current_user['id'],
+                    user_id=default_user_id,
                     account_id=account_id,
                     asset_symbol=symbol.upper(),
                     asset_type=asset_type,

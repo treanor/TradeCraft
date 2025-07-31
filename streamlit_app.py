@@ -14,6 +14,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import calendar
+import os
 
 # Authentication removed for personal use
 
@@ -32,7 +33,7 @@ st.markdown("""
         background: linear-gradient(90deg, #1f4e79 0%, #2c5aa0 100%);
         padding: 1rem;
         border-radius: 10px;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
         text-align: center;
         color: white;
     }
@@ -57,6 +58,21 @@ st.markdown("""
     .stDataFrame {
         border: 1px solid #e0e0e0;
         border-radius: 5px;
+    }
+    /* Clean tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        margin-bottom: 1rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        padding-left: 20px;
+        padding-right: 20px;
+        border-radius: 8px;
+    }
+    /* Add some space after the header */
+    .main-header + div {
+        margin-top: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -638,32 +654,30 @@ def render_calendar(calendar_data: Dict[str, Any]) -> None:
 
 def main():
     """Main Streamlit application."""
-    
-    # Header with custom styling
+      # Header with custom styling
     st.markdown("""
     <div class="main-header">
         <h1>📈 TradeCraft Trading Journal</h1>
         <p style="margin: 0; opacity: 0.9;">Simple. Clean. Effective.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)    # Navigation tabs - moved up for cleaner layout
+    tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Stats", "📈 Charts", "📋 Trades", "📊 Analytics", "🗓️ Calendar", "⚙️ Settings"])
+    
+    # Small spacer for better visual separation
+    st.markdown("<br>", unsafe_allow_html=True)
       # Add a refresh button and data info
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("🔄 Refresh Data", help="Clear cache and reload data"):
             st.cache_data.clear()
             st.rerun()
     
     with col2:
-        if st.button("📊 Toggle Stats", help="Show/hide summary statistics"):
-            st.session_state.show_summary = not st.session_state.get('show_summary', True)
-    
-    with col3:
         if st.button("➕ Add Trade", help="Add a new trade"):
             st.session_state.show_add_form = not st.session_state.get('show_add_form', False)
     
     # Initialize session state
-    if 'show_summary' not in st.session_state:
-        st.session_state.show_summary = True
+    st.markdown("---")
       # Sidebar filters
     st.sidebar.markdown("### 🔍 Filters")
     st.sidebar.markdown("---")
@@ -696,11 +710,12 @@ def main():
             
             1. **Add trades manually** using the form above
             2. **Import from CSV** (feature coming soon)
-            3. **Use demo accounts** (alice/bob) to see sample data            4. **Explore analytics** once you have some trades
+            3. **Use demo accounts** (alice/bob) to see sample data
+            4. **Explore analytics** once you have some trades
             """)
         else:
             st.warning("Please select an account to add trades.")
-        st.stop()
+            return  # Use return instead of st.stop() to exit gracefully
     
     # Get filter options
     all_symbols = get_unique_symbols(trades_df)
@@ -842,11 +857,11 @@ def main():
     if filtered_df.empty:
         st.warning("No trades match your filters.")
         return
-    
-    # Stats overview
+      # Calculate stats for use in tabs
     stats = calculate_portfolio_stats(filtered_df)
-      # Display summary statistics if enabled
-    if st.session_state.show_summary:
+    
+    # Stats Tab - Portfolio Performance Overview
+    with tab0:
         st.markdown("### 📊 Portfolio Performance")
         
         # Performance Overview - Main metrics
@@ -1071,12 +1086,8 @@ def main():
                 f"{total_hold_time:.0f} days" if total_hold_time > 0 else "N/A",
                 help="Estimated total time capital was deployed in trades"
             )
-        
-        st.markdown("---")
     
-    # Main content in tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📈 Charts", "📋 Trades", "📊 Analytics", "🗓️ Calendar"])
-    
+    # Charts Tab
     with tab1:
         col1, col2 = st.columns(2)
         
@@ -1693,8 +1704,7 @@ def main():
     with tab4:
         # Calendar view
         st.subheader("🗓️ Trade Calendar")
-        
-        # Initialize calendar state
+          # Initialize calendar state
         if 'cal_year' not in st.session_state:
             st.session_state.cal_year = datetime.now().year
         if 'cal_month' not in st.session_state:
@@ -1799,103 +1809,265 @@ def main():
                 st.info(f"No trades found for {calendar.month_name[st.session_state.cal_month]} {st.session_state.cal_year}")
         else:
             st.error("Unable to generate calendar data")
-        if 'cal_year' not in st.session_state:
-            st.session_state.cal_year = datetime.now().year
-        if 'cal_month' not in st.session_state:
-            st.session_state.cal_month = datetime.now().month
-          # Create and display calendar
-        calendar_data = create_calendar_data(filtered_df, st.session_state.cal_year, st.session_state.cal_month)
-        
-        if calendar_data['weeks']:
-            render_calendar(calendar_data)
-        else:
-            st.error("Unable to generate calendar data")
-    
-    # Footer
-    st.markdown("---")
-    st.markdown("*Built with Streamlit - Simple & Effective Trading Journal*")
-    
-    # Data summary in sidebar
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📈 Data Summary")
-    st.sidebar.metric("Total Trades", len(trades_df))
-    st.sidebar.metric("Filtered Trades", len(filtered_df))
-    st.sidebar.metric("Date Range", f"{(end_date - start_date).days} days")
 
-def show_add_trade_form(account_id: int):
-    """Show form to add a new trade."""
-    st.markdown("### 🚀 Add Your First Trade!")
-    st.markdown("Let's get started by adding a trade to your journal.")
-    
-    with st.form("add_trade_form", clear_on_submit=True):
+    with tab5:
+        # Settings tab
+        st.subheader("⚙️ Application Settings")
+        
+        # App Configuration
+        st.markdown("### 📱 Application Configuration")
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            symbol = st.text_input("Symbol", placeholder="e.g., AAPL, TSLA", help="Stock symbol or ticker")
-            asset_type = st.selectbox("Asset Type", 
-                                    ["stock", "option", "crypto", "forex", "future", "other"])
-            action = st.selectbox("Action", 
-                                ["buy", "sell", "buy to open", "sell to close", "buy to close", "sell to open"])
-            quantity = st.number_input("Quantity", min_value=1, value=100, step=1)
+            # Display Settings
+            st.markdown("#### 🖥️ Display Settings")
+            
+            # Currency format
+            currency_format = st.selectbox(
+                "Currency Format",
+                ["USD ($)", "EUR (€)", "GBP (£)", "CAD (C$)", "AUD (A$)", "JPY (¥)"],
+                index=0,
+                help="Choose your preferred currency display format"
+            )
+            
+            # Date format
+            date_format = st.selectbox(
+                "Date Format",
+                ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"],
+                index=0,
+                help="Choose your preferred date display format"
+            )
+            
+            # Decimal precision
+            decimal_places = st.number_input(
+                "Decimal Places for P&L",
+                min_value=0,
+                max_value=4,
+                value=2,
+                help="Number of decimal places to show for profit/loss calculations"
+            )
+            
+            # Theme (for future implementation)
+            theme = st.selectbox(
+                "Theme",
+                ["Auto", "Light", "Dark"],
+                index=0,
+                help="Choose your preferred theme (Dark theme coming soon)"
+            )
         
         with col2:
-            price = st.number_input("Price", min_value=0.01, value=100.0, step=0.01, format="%.2f")
-            fees = st.number_input("Fees", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            trade_date = st.date_input("Trade Date", value=datetime.now().date())
-            notes = st.text_area("Notes", placeholder="Optional notes about this trade")
-        
-        # Tags
-        tags = st.text_input("Tags", placeholder="e.g., momentum, earnings, swing (comma-separated)")
-        
-        submitted = st.form_submit_button("🎯 Add Trade", use_container_width=True)
-        
-        if submitted:
-            if not symbol:
-                st.error("Please enter a symbol")
-                return False
+            # Trading Settings
+            st.markdown("#### 📊 Trading Settings")
             
-            try:                # Import the trade insertion function
-                import sys
-                sys.path.append('.')
-                from utils.db_access import insert_trade, insert_trade_leg
-                
-                # For personal use, use default user ID
-                default_user_id = 13  # Using existing user from database
-                
-                # Create the trade
-                trade_date_str = datetime.combine(trade_date, datetime.now().time()).isoformat()
-                trade_id = insert_trade(
-                    user_id=default_user_id,
-                    account_id=account_id,
-                    asset_symbol=symbol.upper(),
-                    asset_type=asset_type,
-                    opened_at=trade_date_str,
-                    notes=notes,
-                    tags=tags
-                )
-                
-                # Add the trade leg
-                leg_id = insert_trade_leg(
-                    trade_id=trade_id,
-                    action=action,
-                    quantity=quantity,
-                    price=price,
-                    fees=fees,
-                    executed_at=trade_date_str,
-                    notes=f"{action} {quantity} shares at ${price}"
-                )
-                
-                st.success(f"✅ Trade added successfully! Trade ID: {trade_id}")
-                st.balloons()                
-                # Clear cache and rerun to show the new trade
+            # Default trade size
+            default_quantity = st.number_input(
+                "Default Trade Quantity",
+                min_value=1,
+                value=100,
+                step=1,
+                help="Default quantity when adding new trades"
+            )
+            
+            # Commission/Fees
+            default_commission = st.number_input(
+                "Default Commission per Trade",
+                min_value=0.0,
+                value=0.0,
+                step=0.01,
+                format="%.2f",
+                help="Default commission/fees for new trades"
+            )
+            
+            # Risk management
+            risk_percentage = st.slider(
+                "Risk Per Trade (%)",
+                min_value=0.1,
+                max_value=10.0,
+                value=2.0,
+                step=0.1,
+                help="Recommended risk percentage per trade"
+            )
+            
+            # Default asset type
+            default_asset_type = st.selectbox(
+                "Default Asset Type",
+                ["stock", "option", "crypto", "forex", "future", "other"],
+                index=0,
+                help="Default asset type when adding new trades"
+            )
+        
+        st.markdown("---")
+        
+        # Data Management
+        st.markdown("### 🗄️ Data Management")
+        
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            st.markdown("#### 📥 Import/Export")
+            
+            # CSV Import (placeholder for future implementation)
+            st.info("📄 **CSV Import** - Coming Soon!\nImport trades from your broker's CSV files")
+            
+            # Export current data
+            if st.button("📤 Export Trades to CSV", help="Download your trades as a CSV file"):
+                try:
+                    # Create CSV export
+                    csv_data = filtered_df.to_csv(index=False)
+                    st.download_button(
+                        label="⬇️ Download CSV",
+                        data=csv_data,
+                        file_name=f"tradecraft_trades_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv",
+                        help="Click to download your trades as a CSV file"
+                    )
+                except Exception as e:
+                    st.error(f"Error creating CSV export: {e}")
+        
+        with col4:
+            st.markdown("#### 🔄 Cache & Performance")
+            
+            # Cache management
+            if st.button("🗑️ Clear Data Cache", help="Clear cached data and reload from database"):
                 st.cache_data.clear()
-                st.rerun()
+                st.success("Cache cleared! Data will be reloaded on next action.")
+            
+            # Database info
+            try:
+                db_size = os.path.getsize("data/tradecraft.db") / (1024 * 1024)  # MB
+                st.metric("Database Size", f"{db_size:.2f} MB")
+            except:
+                st.metric("Database Size", "N/A")
+            
+            # Performance tip
+            st.info("💡 **Tip**: Clear cache if you notice slow performance or data inconsistencies")
+        
+        st.markdown("---")
+        
+        # Advanced Settings
+        st.markdown("### 🔧 Advanced Settings")
+        
+        with st.expander("🛠️ Developer Options", expanded=False):
+            st.markdown("#### 🐛 Debug Information")
+            
+            # Show debug info
+            if st.checkbox("Show Debug Information", value=False):
+                st.write("**Session State:**")
+                st.json(dict(st.session_state))
                 
+                st.write("**Database Schema:**")
+                try:
+                    import sqlite3
+                    conn = sqlite3.connect("data/tradecraft.db")
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                    tables = cursor.fetchall()
+                    st.write(f"Tables: {[table[0] for table in tables]}")
+                    conn.close()
+                except Exception as e:
+                    st.error(f"Could not fetch database info: {e}")
+            
+            # Reset settings
+            st.markdown("#### ⚠️ Reset Options")
+            st.warning("**Warning**: These actions cannot be undone!")
+            
+            if st.button("🔄 Reset Session State", help="Clear all session variables"):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.success("Session state cleared! Page will reload.")
+                st.rerun()
+        
+        st.markdown("---")
+        
+        # About & Help
+        st.markdown("### ℹ️ About TradeCraft")
+        
+        col5, col6 = st.columns(2)
+        
+        with col5:
+            st.markdown("""
+            **TradeCraft Trading Journal**
+            
+            A simple, clean, and effective trading journal built with Streamlit.
+            
+            **Features:**
+            - 📊 Portfolio performance tracking
+            - 📈 Interactive charts and analytics
+            - 📋 Detailed trade logging
+            - 🗓️ Calendar view of trading activity
+            - 🔍 Advanced filtering and search
+            """)
+        
+        with col6:
+            st.markdown("""
+            **Quick Help:**
+            
+            - **Add Trades**: Use the "Add Trade" button in the main area
+            - **Filter Data**: Use the sidebar filters to narrow down your view
+            - **Export Data**: Use the Export button in this Settings tab
+            - **Clear Cache**: If data seems stale, clear the cache here
+            
+            **Keyboard Shortcuts:**
+            - `Ctrl+R` - Refresh page
+            - `F11` - Toggle fullscreen
+            """)
+        
+        # Version info (you can update this as needed)
+        st.markdown("---")
+        st.caption("TradeCraft v2.0 | Built with ❤️ using Streamlit")
+
+def show_add_trade_form(account_id: int):
+    """Display form to add a new trade."""
+    st.markdown("### ➕ Add New Trade")
+    
+    with st.form("add_trade_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            symbol = st.text_input("Symbol", placeholder="e.g., AAPL", help="Stock symbol or asset name")
+            quantity = st.number_input("Quantity", min_value=1, value=100, step=1)
+            entry_price = st.number_input("Entry Price", min_value=0.01, value=100.00, step=0.01, format="%.2f")
+            asset_type = st.selectbox("Asset Type", ["stock", "option", "crypto", "forex", "future", "other"])
+        
+        with col2:
+            exit_price = st.number_input("Exit Price (optional)", min_value=0.00, value=0.00, step=0.01, format="%.2f")
+            opened_at = st.date_input("Trade Date", value=datetime.now().date())
+            tags = st.text_input("Tags", placeholder="swing, earnings, breakout", help="Comma-separated tags")
+            notes = st.text_area("Notes", placeholder="Trade rationale, setup, etc.")
+        
+        submitted = st.form_submit_button("💾 Add Trade")
+        
+        if submitted and symbol and quantity > 0 and entry_price > 0:
+            try:
+                # Insert trade into database
+                conn = sqlite3.connect("data/tradecraft.db")
+                cursor = conn.cursor()
+                
+                # Calculate P&L if exit price is provided
+                pnl = (exit_price - entry_price) * quantity if exit_price > 0 else 0
+                status = "closed" if exit_price > 0 else "open"
+                closed_at = opened_at if exit_price > 0 else None
+                
+                cursor.execute("""
+                    INSERT INTO trades 
+                    (account_id, symbol, quantity, entry_price, exit_price, opened_at, closed_at, 
+                     pnl, status, asset_type, tags, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (account_id, symbol, quantity, entry_price, 
+                      exit_price if exit_price > 0 else None, opened_at, closed_at,
+                      pnl, status, asset_type, tags, notes))
+                
+                conn.commit()
+                conn.close()
+                
+                st.success(f"✅ Trade added successfully: {symbol} ({quantity} shares)")
+                st.cache_data.clear()  # Clear cache to refresh data
+                st.rerun()
             except Exception as e:
                 st.error(f"Error adding trade: {e}")
-                return False
-    
-    return True
+        elif submitted:
+            st.error("Please fill in all required fields (Symbol, Quantity, Entry Price)")
 
-if __name__ == "__main__":
-    main()
+# Call main function
+main()

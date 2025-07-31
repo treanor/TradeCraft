@@ -26,7 +26,8 @@ def test_is_trade_open():
 
 def test_insert_trade_and_leg():
     user_id = 1  # alice
-    trade_id = db_access.insert_trade(user_id, "TEST", "stock", "2025-06-09T09:30:00", "test trade", "test")
+    account_id = 1  # alice's account
+    trade_id = db_access.insert_trade(user_id, account_id, "TEST", "stock", "2025-06-09T09:30:00", "test trade", "test")
     assert isinstance(trade_id, int)
     leg_id = db_access.insert_trade_leg(trade_id, "buy to open", 10, 100.0, 1.0, "2025-06-09T09:35:00", "test leg")
     assert isinstance(leg_id, int)

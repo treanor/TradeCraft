@@ -7,6 +7,23 @@ This project is a Dash (Plotly) web app for a personal trading journal and analy
 
 ---
 
+## Architecture Pattern
+
+We follow the **Model-View-ViewModel (MVVM)** pattern:
+
+- **Model:**  
+  Handles data access and transformation logic (e.g., loading/parsing trades, calculations, database interaction). Place this in `/utils/`.
+
+- **View:**  
+  Defines how data is presented to the user. These are Dash layout components and pages in `/pages/` and `/components/`.
+
+- **ViewModel:**  
+  Acts as a bridge between View and Model. Handles callback logic, user interactions, and data flow. Define these in dedicated modules, separate from UI layout definitions.
+
+This separation improves testability, reusability, and scalability.
+
+---
+
 ## Coding Standards
 
 - **Use Python 3.10+ (type hints required for all functions/classes).**

@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import sqlite3
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import calendar
 import os
 
@@ -267,7 +267,7 @@ def calculate_portfolio_stats(df: pd.DataFrame) -> Dict[str, Any]:
                 avg_loss_hold_time = loss_trades['hold_time_days'].mean()
     
     # Win/Loss streak calculations
-    def calculate_streaks(pnl_series):
+    def calculate_streaks(pnl_series: pd.Series) -> Tuple[int, int]:
         """Calculate max win and loss streaks."""
         if len(pnl_series) == 0:
             return 0, 0

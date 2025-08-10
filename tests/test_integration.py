@@ -3,6 +3,8 @@ Integration tests for the complete workflow.
 """
 import pytest
 import pandas as pd
+from pathlib import Path
+from typing import Dict, Any
 from utils import db_access
 from utils.view_models.trade_log_view_model import TradeLogViewModel
 from pages.analytics.data_processor import AnalyticsDataProcessor
@@ -12,8 +14,9 @@ from pages.analytics.data_processor import AnalyticsDataProcessor
 class TestWorkflowIntegration:
     """Test complete workflows across multiple components."""
     
-    def test_trade_creation_and_analytics_workflow(self, test_db, sample_trade_data, sample_leg_data):
-        """Test complete workflow: create trade -> add legs -> calculate analytics."""        # Step 1: Create a trade
+    def test_trade_creation_and_analytics_workflow(self, test_db: Path, sample_trade_data: Dict[str, Any], sample_leg_data: Dict[str, Any]) -> None:
+        """Test complete workflow: create trade -> add legs -> calculate analytics."""
+        # Step 1: Create a trade
         trade_id = db_access.insert_trade(
             user_id=sample_trade_data['user_id'],
             account_id=sample_trade_data['account_id'],
@@ -55,7 +58,7 @@ class TestWorkflowIntegration:
         assert analytics['total_sold'] == 100
         assert analytics['open_qty'] == 0
     
-    def test_view_model_integration(self, test_db):
+    def test_view_model_integration(self, test_db: Path) -> None:
         """Test view model integration with database."""
         view_model = TradeLogViewModel()
         
@@ -71,7 +74,8 @@ class TestWorkflowIntegration:
         assert isinstance(df, pd.DataFrame)
         assert len(df) > 0
         
-        # Check required columns        required_columns = ['return_dollar', 'status', 'return_pct']
+        # Check required columns
+        required_columns = ['return_dollar', 'status', 'return_pct']
         for col in required_columns:
             assert col in df.columns
         
@@ -80,7 +84,7 @@ class TestWorkflowIntegration:
         valid_statuses = {'WIN', 'LOSS', 'OPEN', 'BREAK-EVEN'}
         assert all(status in valid_statuses for status in statuses)
     
-    def test_analytics_processor_integration(self, test_db):
+    def test_analytics_processor_integration(self, test_db: Path) -> None:
         """Test analytics processor with real data."""
         view_model = TradeLogViewModel()
         
@@ -101,7 +105,7 @@ class TestWorkflowIntegration:
         fig = AnalyticsDataProcessor.create_asset_allocation_figure(df)
         assert fig is not None
     
-    def test_filtering_workflow(self, test_db):
+    def test_filtering_workflow(self, test_db: Path) -> None:
         """Test filtering workflow with various parameters."""
         view_model = TradeLogViewModel()
         
@@ -134,7 +138,7 @@ class TestWorkflowIntegration:
             df = pd.read_json(result, orient="split")
             assert isinstance(df, pd.DataFrame)
     
-    def test_win_loss_calculation_accuracy(self, test_db):
+    def test_win_loss_calculation_accuracy(self, test_db: Path) -> None:
         """Test that win/loss calculations are accurate across the system."""
         # Get trades through view model
         view_model = TradeLogViewModel()

@@ -34,7 +34,7 @@ def run_tests(test_type: Optional[str] = None, coverage: bool = False) -> int:
     return result.returncode
 
 
-def main() -> None:
+def main() -> int:
     """Main test runner."""
     args: List[str] = sys.argv[1:]
     

@@ -125,7 +125,7 @@ class TestWorkflowIntegration:
                 'symbols': ['AAPL']
             }
         ]
-          for test_case in test_cases:
+        for test_case in test_cases:
             result = view_model.get_filtered_trades_data(
                 **test_case
             )
@@ -137,7 +137,8 @@ class TestWorkflowIntegration:
     def test_win_loss_calculation_accuracy(self, test_db):
         """Test that win/loss calculations are accurate across the system."""
         # Get trades through view model
-        view_model = TradeLogViewModel()        json_data = view_model.get_filtered_trades_data(
+        view_model = TradeLogViewModel()
+        json_data = view_model.get_filtered_trades_data(
             start_date="2020-01-01",
             end_date="2025-12-31"
         )

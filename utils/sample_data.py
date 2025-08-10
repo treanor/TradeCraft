@@ -136,16 +136,16 @@ def insert_sample_data(db_path: Path = DB_PATH) -> None:
         trade_symbols.append((trade_id, symbol_id))
         
         # Legs
-        open_dt = trade_rows[idx][4]
-        close_dt = trade_rows[idx][5]
-        created_at = trade_rows[idx][7]
-        updated_at = trade_rows[idx][8]
+        open_dt_str: str = trade_rows[idx][4]
+        close_dt_str: str = trade_rows[idx][5]
+        created_at_str: str = trade_rows[idx][7]
+        updated_at_str: str = trade_rows[idx][8]
         
-        open_leg = (trade_id, "buy", qty, entry_price, round(random.random(), 2), open_dt, "Open leg", created_at, updated_at)
+        open_leg = (trade_id, "buy", qty, entry_price, round(random.random(), 2), open_dt_str, "Open leg", created_at_str, updated_at_str)
         trade_legs.append(open_leg)
         
-        if not is_open and close_dt:
-            close_leg = (trade_id, "sell", qty, exit_price, round(random.random(), 2), close_dt, "Close leg", created_at, updated_at)
+        if not is_open and close_dt_str:
+            close_leg = (trade_id, "sell", qty, exit_price, round(random.random(), 2), close_dt_str, "Close leg", created_at_str, updated_at_str)
             trade_legs.append(close_leg)
     
     cur.executemany("INSERT INTO trade_tags (trade_id, tag_id) VALUES (?, ?)", trade_tags)

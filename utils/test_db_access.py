@@ -4,13 +4,13 @@ Basic tests for db_access.py utility functions.
 import pytest
 from utils import db_access
 
-def test_fetch_trades_for_user():
+def test_fetch_trades_for_user() -> None:
     trades = db_access.fetch_trades_for_user("alice")
     assert isinstance(trades, list)
     assert len(trades) > 0
     assert all('asset_symbol' in t for t in trades)
 
-def test_fetch_legs_for_trade():
+def test_fetch_legs_for_trade() -> None:
     trades = db_access.fetch_trades_for_user("alice")
     trade_id = trades[0]['id']
     legs = db_access.fetch_legs_for_trade(trade_id)
@@ -18,13 +18,13 @@ def test_fetch_legs_for_trade():
     assert len(legs) > 0
     assert all('action' in l for l in legs)
 
-def test_is_trade_open():
+def test_is_trade_open() -> None:
     trades = db_access.fetch_trades_for_user("alice")
     trade_id = trades[0]['id']
     # All sample trades should be closed by design
     assert db_access.is_trade_open(trade_id) is False
 
-def test_insert_trade_and_leg():
+def test_insert_trade_and_leg() -> None:
     user_id = 1  # alice
     account_id = 1  # alice's account
     trade_id = db_access.insert_trade(user_id, account_id, "TEST", "stock", "2025-06-09T09:30:00", "test trade", "test")

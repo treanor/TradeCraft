@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import sqlite3
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import calendar
 import os
 
@@ -79,7 +79,7 @@ st.markdown("""
 
 # Database functions (simplified from your existing utils)
 @st.cache_resource
-def get_db_connection(db_path: str = "data/tradecraft.db"):
+def get_db_connection(db_path: str = "data/tradecraft.db") -> sqlite3.Connection:
     """Get database connection with resource caching."""
     return sqlite3.connect(db_path, check_same_thread=False)
 
@@ -267,7 +267,7 @@ def calculate_portfolio_stats(df: pd.DataFrame) -> Dict[str, Any]:
                 avg_loss_hold_time = loss_trades['hold_time_days'].mean()
     
     # Win/Loss streak calculations
-    def calculate_streaks(pnl_series):
+    def calculate_streaks(pnl_series: pd.Series) -> Tuple[int, int]:
         """Calculate max win and loss streaks."""
         if len(pnl_series) == 0:
             return 0, 0
@@ -527,10 +527,10 @@ def create_calendar_data(df: pd.DataFrame, year: int, month: int) -> Dict[str, A
         
         # Calculate weekly summary
         current_month_days = [d for d in week_data if d['is_current_month']]
-        week_pnl = sum(d['pnl'] for d in current_month_days)
-        week_trades = sum(d['trade_count'] for d in current_month_days)
-        wins = len([d for d in current_month_days if d['pnl'] > 0])
-        losses = len([d for d in current_month_days if d['pnl'] < 0])
+        week_pnl = sum(d['pnl'] for d in current_month_days if isinstance(d['pnl'], (int, float)))
+        week_trades = sum(d['trade_count'] for d in current_month_days if isinstance(d['trade_count'], (int, float)))
+        wins = len([d for d in current_month_days if isinstance(d['pnl'], (int, float)) and d['pnl'] > 0])
+        losses = len([d for d in current_month_days if isinstance(d['pnl'], (int, float)) and d['pnl'] < 0])
         win_rate = (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0
         
         weeks.append({
@@ -652,7 +652,7 @@ def render_calendar(calendar_data: Dict[str, Any]) -> None:
           # Add spacing between weeks
         st.markdown("<br>", unsafe_allow_html=True)
 
-def main():
+def main() -> None:
     """Main Streamlit application."""
       # Header with custom styling
     st.markdown("""
@@ -2017,7 +2017,7 @@ def main():
         st.markdown("---")
         st.caption("TradeCraft v2.0 | Built with ❤️ using Streamlit")
 
-def show_add_trade_form(account_id: int):
+def show_add_trade_form(account_id: int) -> None:
     """Display form to add a new trade."""
     st.markdown("### ➕ Add New Trade")
     

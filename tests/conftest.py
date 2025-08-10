@@ -5,12 +5,13 @@ import pytest
 import tempfile
 import sqlite3
 from pathlib import Path
+from typing import Dict, Any, Generator
 from utils.db_init import create_schema, get_connection
 from utils.sample_data import insert_sample_data
 
 
 @pytest.fixture(scope="session")
-def test_db():
+def test_db() -> Generator[Path, None, None]:
     """Create a temporary test database with sample data."""
     # Create temporary database
     with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
@@ -51,7 +52,7 @@ def test_db():
 
 
 @pytest.fixture
-def sample_trade_data():
+def sample_trade_data() -> Dict[str, Any]:
     """Sample trade data for testing."""
     return {
         'user_id': 1,
@@ -65,7 +66,7 @@ def sample_trade_data():
 
 
 @pytest.fixture
-def sample_leg_data():
+def sample_leg_data() -> Dict[str, Any]:
     """Sample trade leg data for testing."""
     return {
         'action': 'buy',

@@ -9,7 +9,7 @@ import sqlite3
 import hashlib
 import secrets
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable, List
 from datetime import datetime
 
 # Database path
@@ -110,7 +110,7 @@ def create_user(username: str, email: str, password: str) -> bool:
         st.error(f"Error creating user: {e}")
         return False
 
-def get_user_accounts(user_id: int) -> list:
+def get_user_accounts(user_id: int) -> List[Dict[str, Any]]:
     """Get all accounts for a user."""
     try:
         with get_db_connection() as conn:
@@ -133,13 +133,13 @@ def get_current_user() -> Optional[Dict[str, Any]]:
     """Get the current logged-in user."""
     return st.session_state.get('user')
 
-def logout():
+def logout() -> None:
     """Log out the current user."""
     if 'user' in st.session_state:
         del st.session_state.user
     st.rerun()
 
-def show_login_form():
+def show_login_form() -> None:
     """Display the login form."""
     # Custom CSS for the login form
     st.markdown("""
@@ -265,7 +265,7 @@ def show_login_form():
     </div>
     """, unsafe_allow_html=True)
 
-def show_user_header():
+def show_user_header() -> None:
     """Show logged-in user header with logout option."""
     user = get_current_user()
     if not user:
@@ -288,7 +288,7 @@ def show_user_header():
         if st.button("🚪 Logout", help="Sign out of your account"):
             logout()
 
-def require_auth(app_function):
+def require_auth(app_function: Callable[[], None]) -> Callable[[], None]:
     """
     Decorator to require authentication for app functions.
     
@@ -297,7 +297,7 @@ def require_auth(app_function):
         def main_app():
             # Your app code here
     """
-    def wrapper():
+    def wrapper() -> None:
         if not is_logged_in():
             show_login_form()
         else:
@@ -307,7 +307,7 @@ def require_auth(app_function):
     
     return wrapper
 
-def get_demo_users():
+def get_demo_users() -> None:
     """Get or create demo users for testing."""
     try:
         with get_db_connection() as conn:

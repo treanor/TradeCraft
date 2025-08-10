@@ -2,7 +2,7 @@
 Utility functions for applying filters to trade DataFrames.
 Reusable for Trade Log and Analytics pages.
 """
-from typing import Optional, List
+from typing import Optional, List, Callable, Any
 import pandas as pd
 
 def apply_trade_filters(
@@ -51,7 +51,7 @@ def apply_trade_filters(
         df = df[df["opened_at"] <= end_ts]
     if tags:
         # Robust tag filtering: match if any tag in tags is in the taglist (list or string)
-        def tag_match(taglist):
+        def tag_match(taglist: Any) -> bool:
             if taglist is None:
                 return False
             if isinstance(taglist, list):
@@ -67,7 +67,7 @@ def apply_trade_filters(
     return df
 
 
-def normalize_tags_column(df: pd.DataFrame, tag_fetcher=None) -> pd.DataFrame:
+def normalize_tags_column(df: pd.DataFrame, tag_fetcher: Optional[Callable[[int], List[str]]] = None) -> pd.DataFrame:
     """
     Ensure the DataFrame has a 'tags' column as a comma-separated string for each row.
     Optionally, provide a tag_fetcher function (trade_id -> list of tags) for DB-backed normalization.
@@ -81,7 +81,7 @@ def normalize_tags_column(df: pd.DataFrame, tag_fetcher=None) -> pd.DataFrame:
             df['tags'] = ''
     else:
         # Normalize any list or NaN to comma-separated string
-        def to_str(val):
+        def to_str(val: Any) -> str:
             if isinstance(val, list):
                 return ', '.join(str(t).strip() for t in val if t)
             if pd.isna(val):

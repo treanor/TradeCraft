@@ -1,9 +1,10 @@
 import sqlite3
+from typing import List, Tuple, Any
 
-con = sqlite3.connect('data/tradecraft.db')
-cur = con.cursor()
+con: sqlite3.Connection = sqlite3.connect('data/tradecraft.db')
+cur: sqlite3.Cursor = con.cursor()
 print('weekday n')
-rows = list(cur.execute("SELECT strftime('%w', opened_at) as weekday, COUNT(*) as n FROM trades GROUP BY weekday ORDER BY weekday;"))
+rows: List[Tuple[Any, ...]] = list(cur.execute("SELECT strftime('%w', opened_at) as weekday, COUNT(*) as n FROM trades GROUP BY weekday ORDER BY weekday;"))
 for row in rows:
     print(f'{row[0]} {row[1]}')
 print('Total trades:', cur.execute('SELECT COUNT(*) FROM trades').fetchone()[0])

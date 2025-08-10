@@ -4,14 +4,14 @@ Pytest tests for db_access.py utility functions (in utils/tests/).
 import pytest
 from utils import db_access
 
-def test_fetch_trades_for_user():
+def test_fetch_trades_for_user() -> None:
     """Test fetching all trades for a user returns a non-empty list with expected keys."""
     trades = db_access.fetch_trades_for_user("alice")
     assert isinstance(trades, list)
     assert len(trades) > 0
     assert all('asset_symbol' in t for t in trades)
 
-def test_fetch_legs_for_trade():
+def test_fetch_legs_for_trade() -> None:
     """Test fetching all legs for a trade returns a non-empty list with expected keys."""
     trades = db_access.fetch_trades_for_user("alice")
     trade_id = trades[0]['id']
@@ -20,13 +20,13 @@ def test_fetch_legs_for_trade():
     assert len(legs) > 0
     assert all('action' in l for l in legs)
 
-def test_is_trade_open():
+def test_is_trade_open() -> None:
     """Test that all sample trades are closed by design."""
     trades = db_access.fetch_trades_for_user("alice")
     trade_id = trades[0]['id']
     assert db_access.is_trade_open(trade_id) is False
 
-def test_insert_trade_and_leg():
+def test_insert_trade_and_leg() -> None:
     """Test inserting a trade and leg, then clean up."""
     user_id = 1  # alice
     account_id = 1  # alice's account
@@ -41,7 +41,7 @@ def test_insert_trade_and_leg():
         conn.execute("DELETE FROM trades WHERE id = ?", (trade_id,))
         conn.commit()
 
-def test_trade_analytics():
+def test_trade_analytics() -> None:
     """Test analytics helper returns expected keys and values."""
     trades = db_access.fetch_trades_for_user("alice")
     trade_id = trades[0]["id"]

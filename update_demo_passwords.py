@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from auth import hash_password
 
-def update_demo_passwords():
+def update_demo_passwords() -> None:
     """Update alice and bob with hashed passwords."""
     db_path = Path('data/tradecraft.db')
     

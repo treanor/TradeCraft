@@ -3,6 +3,8 @@ Unit tests for database access functions.
 """
 import pytest
 import pandas as pd
+from pathlib import Path
+from typing import Dict, Any
 from utils import db_access
 
 
@@ -10,7 +12,7 @@ from utils import db_access
 class TestDatabaseAccess:
     """Test database access functions."""
     
-    def test_fetch_trades_for_user(self, test_db):
+    def test_fetch_trades_for_user(self, test_db: Path) -> None:
         """Test fetching trades for a user."""
         trades = db_access.fetch_trades_for_user("alice", test_db)
         
@@ -23,7 +25,7 @@ class TestDatabaseAccess:
         for field in required_fields:
             assert field in trade
     
-    def test_fetch_trades_for_user_and_account(self, test_db):
+    def test_fetch_trades_for_user_and_account(self, test_db: Path) -> None:
         """Test fetching trades for user and account."""
         trades = db_access.fetch_trades_for_user_and_account(1, 1, test_db)
         
@@ -31,7 +33,7 @@ class TestDatabaseAccess:
         assert len(trades) > 0
         assert all(t['user_id'] == 1 and t['account_id'] == 1 for t in trades)
     
-    def test_fetch_legs_for_trade(self, test_db):
+    def test_fetch_legs_for_trade(self, test_db: Path) -> None:
         """Test fetching legs for a trade."""
         trades = db_access.fetch_trades_for_user("alice", test_db)
         trade_id = trades[0]['id']
@@ -47,7 +49,7 @@ class TestDatabaseAccess:
         for field in required_fields:
             assert field in leg
     
-    def test_trade_analytics(self, test_db):
+    def test_trade_analytics(self, test_db: Path) -> None:
         """Test trade analytics calculation."""
         trades = db_access.fetch_trades_for_user("alice", test_db)
         trade_id = trades[0]['id']
@@ -69,7 +71,7 @@ class TestDatabaseAccess:
         assert analytics['total_bought'] >= 0
         assert analytics['total_sold'] >= 0
     
-    def test_insert_trade(self, test_db, sample_trade_data):
+    def test_insert_trade(self, test_db: Path, sample_trade_data: Dict[str, Any]) -> None:
         """Test inserting a new trade."""
         trade_id = db_access.insert_trade(
             user_id=sample_trade_data['user_id'],
@@ -91,8 +93,9 @@ class TestDatabaseAccess:
         assert new_trade is not None
         assert new_trade['asset_symbol'] == sample_trade_data['asset_symbol']
     
-    def test_insert_trade_leg(self, test_db, sample_trade_data, sample_leg_data):
-        """Test inserting a trade leg."""        # First create a trade
+    def test_insert_trade_leg(self, test_db: Path, sample_trade_data: Dict[str, Any], sample_leg_data: Dict[str, Any]) -> None:
+        """Test inserting a trade leg."""
+        # First create a trade
         trade_id = db_access.insert_trade(
             user_id=sample_trade_data['user_id'],
             account_id=sample_trade_data['account_id'],

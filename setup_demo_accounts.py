@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-def setup_demo_accounts():
+def setup_demo_accounts() -> None:
     """Create demo accounts for alice and bob if they don't exist."""
     db_path = Path('data/tradecraft.db')
     

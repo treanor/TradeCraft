@@ -72,7 +72,7 @@ def fetch_trades_for_account(account_id: int, db_path: Optional[Path] = None) ->
         return [dict(row) for row in cur.fetchall()]
 
 
-def fetch_trades_for_user_and_account(user_id: int, account_id: int, db_path: Optional[Path] = None) -> list[dict]:
+def fetch_trades_for_user_and_account(user_id: int, account_id: int, db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
     """Fetch all trades for a given user_id and account_id."""
     if db_path is None:
         db_path = get_db_path()
@@ -185,6 +185,8 @@ def insert_trade(user_id: int, account_id: int, asset_symbol: str, asset_type: s
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (user_id, account_id, asset_symbol if isinstance(asset_symbol, str) else ",".join(asset_symbol), asset_type, opened_at, notes, tags if isinstance(tags, str) else ",".join(tags), now, now))
         trade_id = cur.lastrowid
+        if trade_id is None:
+            raise ValueError("Failed to insert trade - no row ID returned")
         # --- Insert tags into tags/trade_tags tables ---
         tag_list = tags.split(",") if isinstance(tags, str) else tags
         for tag in tag_list:
@@ -197,7 +199,7 @@ def insert_trade(user_id: int, account_id: int, asset_symbol: str, asset_type: s
                 tag_id = row[0]
             else:
                 cur.execute('INSERT INTO tags (name) VALUES (?)', (tag,))
-                tag_id = cur.lastrowid
+                tag_id = cur.lastrowid or 0
             cur.execute('INSERT OR IGNORE INTO trade_tags (trade_id, tag_id) VALUES (?, ?)', (trade_id, tag_id))
         # --- Insert symbols into symbols/trade_symbols tables ---
         symbol_list = asset_symbol.split(",") if isinstance(asset_symbol, str) else asset_symbol
@@ -211,7 +213,7 @@ def insert_trade(user_id: int, account_id: int, asset_symbol: str, asset_type: s
                 symbol_id = row[0]
             else:
                 cur.execute('INSERT INTO symbols (symbol) VALUES (?)', (symbol,))
-                symbol_id = cur.lastrowid
+                symbol_id = cur.lastrowid or 0
             cur.execute('INSERT OR IGNORE INTO trade_symbols (trade_id, symbol_id) VALUES (?, ?)', (trade_id, symbol_id))
         conn.commit()
         return trade_id
@@ -269,7 +271,7 @@ def insert_trade_leg(trade_id: int, action: str, quantity: int, price: float, fe
                 if last_close:
                     cur.execute('UPDATE trades SET closed_at = ? WHERE id = ?', (last_close, trade_id))
                     conn.commit()
-        return cur.lastrowid
+        return cur.lastrowid or 0  # Return 0 if lastrowid is None
 
 
 def trade_analytics(trade_id: int, db_path: Optional[Path] = None) -> Dict[str, Any]:
@@ -317,7 +319,7 @@ def trade_analytics(trade_id: int, db_path: Optional[Path] = None) -> Dict[str, 
     }
 
 
-def get_tags_for_trade(trade_id: int, db_path: Optional[Path] = None) -> list[str]:
+def get_tags_for_trade(trade_id: int, db_path: Optional[Path] = None) -> List[str]:
     """Return a list of tag names for a given trade."""
     if db_path is None:
         db_path = get_db_path()
@@ -331,7 +333,7 @@ def get_tags_for_trade(trade_id: int, db_path: Optional[Path] = None) -> list[st
         return [row[0] for row in cur.fetchall()]
 
 
-def get_all_tags(db_path: Optional[Path] = None) -> list[str]:
+def get_all_tags(db_path: Optional[Path] = None) -> List[str]:
     """Return all unique tag names in the system."""
     if db_path is None:
         db_path = get_db_path()
@@ -341,7 +343,7 @@ def get_all_tags(db_path: Optional[Path] = None) -> list[str]:
         return [row[0] for row in cur.fetchall()]
 
 
-def set_tags_for_trade(trade_id: int, tags: list[str], db_path: Optional[Path] = None) -> None:
+def set_tags_for_trade(trade_id: int, tags: List[str], db_path: Optional[Path] = None) -> None:
     """Set the tags for a trade, replacing any existing tags."""
     if db_path is None:
         db_path = get_db_path()
@@ -358,12 +360,12 @@ def set_tags_for_trade(trade_id: int, tags: list[str], db_path: Optional[Path] =
                 tag_id = row[0]
             else:
                 cur.execute('INSERT INTO tags (name) VALUES (?)', (tag,))
-                tag_id = cur.lastrowid
+                tag_id = cur.lastrowid or 0
             cur.execute('INSERT OR IGNORE INTO trade_tags (trade_id, tag_id) VALUES (?, ?)', (trade_id, tag_id))
         conn.commit()
 
 
-def get_symbols_for_trade(trade_id: int, db_path: Optional[Path] = None) -> list[str]:
+def get_symbols_for_trade(trade_id: int, db_path: Optional[Path] = None) -> List[str]:
     """Return a list of symbols for a given trade."""
     if db_path is None:
         db_path = get_db_path()
@@ -377,7 +379,7 @@ def get_symbols_for_trade(trade_id: int, db_path: Optional[Path] = None) -> list
         return [row[0] for row in cur.fetchall()]
 
 
-def get_all_symbols(db_path: Optional[Path] = None) -> list[str]:
+def get_all_symbols(db_path: Optional[Path] = None) -> List[str]:
     """Return all unique symbols in the system."""
     if db_path is None:
         db_path = get_db_path()
@@ -387,7 +389,7 @@ def get_all_symbols(db_path: Optional[Path] = None) -> list[str]:
         return [row[0] for row in cur.fetchall()]
 
 
-def set_symbols_for_trade(trade_id: int, symbols: list[str], db_path: Optional[Path] = None) -> None:
+def set_symbols_for_trade(trade_id: int, symbols: List[str], db_path: Optional[Path] = None) -> None:
     """Set the symbols for a trade, replacing any existing symbols."""
     if db_path is None:
         db_path = get_db_path()
@@ -404,12 +406,12 @@ def set_symbols_for_trade(trade_id: int, symbols: list[str], db_path: Optional[P
                 symbol_id = row[0]
             else:
                 cur.execute('INSERT INTO symbols (symbol) VALUES (?)', (symbol,))
-                symbol_id = cur.lastrowid
+                symbol_id = cur.lastrowid or 0
             cur.execute('INSERT OR IGNORE INTO trade_symbols (trade_id, symbol_id) VALUES (?, ?)', (trade_id, symbol_id))
         conn.commit()
 
 
-def get_all_users(db_path: Optional[Path] = None) -> list[dict]:
+def get_all_users(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
     """Return all users as a list of dicts with id and username."""
     if db_path is None:
         db_path = get_db_path()
@@ -419,7 +421,7 @@ def get_all_users(db_path: Optional[Path] = None) -> list[dict]:
         return [{"id": row[0], "username": row[1]} for row in cur.fetchall()]
 
 
-def get_accounts_for_user(user_id: int, db_path: Optional[Path] = None) -> list[dict]:
+def get_accounts_for_user(user_id: int, db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
     """Return all accounts for a user as a list of dicts with id, name, broker."""
     if db_path is None:
         db_path = get_db_path()

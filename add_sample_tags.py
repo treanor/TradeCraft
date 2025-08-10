@@ -1,12 +1,13 @@
 import sqlite3
 import random
+from typing import List
 
 # Connect to database
-conn = sqlite3.connect('data/tradecraft.db')
-cursor = conn.cursor()
+conn: sqlite3.Connection = sqlite3.connect('data/tradecraft.db')
+cursor: sqlite3.Cursor = conn.cursor()
 
 # Sample tags to add
-sample_tags = [
+sample_tags: List[str] = [
     'day-trade', 'swing-trade', 'earnings-play', 'momentum', 'reversal',
     'breakout', 'pullback', 'gap-up', 'gap-down', 'support-bounce',
     'resistance-break', 'trend-following', 'contrarian', 'scalp', 'position'
@@ -14,14 +15,14 @@ sample_tags = [
 
 # Get first 50 trades to add tags to
 cursor.execute("SELECT id FROM trades LIMIT 50")
-trade_ids = [row[0] for row in cursor.fetchall()]
+trade_ids: List[int] = [row[0] for row in cursor.fetchall()]
 
 # Add random tags to trades
 for trade_id in trade_ids:
     # Random number of tags (1-3 per trade)
-    num_tags = random.randint(1, 3)
-    selected_tags = random.sample(sample_tags, num_tags)
-    tags_string = ', '.join(selected_tags)
+    num_tags: int = random.randint(1, 3)
+    selected_tags: List[str] = random.sample(sample_tags, num_tags)
+    tags_string: str = ', '.join(selected_tags)
     
     cursor.execute("UPDATE trades SET tags = ? WHERE id = ?", (tags_string, trade_id))
 

@@ -11,11 +11,12 @@ Usage:
 import sys
 import subprocess
 from pathlib import Path
+from typing import Optional, List
 
 
-def run_tests(test_type=None, coverage=False):
+def run_tests(test_type: Optional[str] = None, coverage: bool = False) -> int:
     """Run tests with specified options."""
-    cmd = ["python", "-m", "pytest"]
+    cmd: List[str] = ["python", "-m", "pytest"]
     
     # Add coverage if requested
     if coverage:
@@ -33,12 +34,12 @@ def run_tests(test_type=None, coverage=False):
     return result.returncode
 
 
-def main():
+def main() -> None:
     """Main test runner."""
-    args = sys.argv[1:]
+    args: List[str] = sys.argv[1:]
     
-    test_type = None
-    coverage = False
+    test_type: Optional[str] = None
+    coverage: bool = False
     
     for arg in args:
         if arg == "--unit":

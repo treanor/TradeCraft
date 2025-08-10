@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import random
 
-def add_sample_trades_for_user(username: str, num_trades: int = 10):
+def add_sample_trades_for_user(username: str, num_trades: int = 10) -> None:
     """Add sample trades for a specific user."""
     db_path = Path('data/tradecraft.db')
     

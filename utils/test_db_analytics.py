@@ -4,7 +4,7 @@ Tests for analytics helper in db_access.py
 import pytest
 from utils import db_access
 
-def test_trade_analytics():
+def test_trade_analytics() -> None:
     trades = db_access.fetch_trades_for_user("alice")
     trade_id = trades[0]["id"]
     analytics = db_access.trade_analytics(trade_id)
@@ -15,7 +15,7 @@ def test_trade_analytics():
     assert "total_fees" in analytics
     assert analytics["total_fees"] >= 0
 
-def test_dummy():
+def test_dummy() -> None:
     assert True
 
 if __name__ == "__main__":
